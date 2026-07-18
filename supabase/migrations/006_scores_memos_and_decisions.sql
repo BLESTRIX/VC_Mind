@@ -47,6 +47,7 @@ create table public.memos (
   verified_claims jsonb not null default '[]'::jsonb check (jsonb_typeof(verified_claims) = 'array'),
   unverified_claims jsonb not null default '[]'::jsonb check (jsonb_typeof(unverified_claims) = 'array'),
   contradicted_claims jsonb not null default '[]'::jsonb check (jsonb_typeof(contradicted_claims) = 'array'),
+  validation_flags jsonb not null default '[]'::jsonb check (jsonb_typeof(validation_flags) = 'array'),
   key_questions jsonb not null default '[]'::jsonb check (jsonb_typeof(key_questions) = 'array'),
   strongest_reason_to_pass text,
   recommendation public.recommendation not null,

@@ -69,7 +69,7 @@ Thesis versions have a unique `(owner_id, name, version)` identity. Only one act
 
 ## Evidence coverage
 
-`application_evidence_coverage(application_id)` returns the percentage of checkable high/critical claims having at least one supporting, partially supporting, or contradicting evidence row. A contradiction therefore counts as coverage. Coverage measures diligence completeness, not truth probability.
+`application_evidence_coverage(application_id)` returns weighted coverage across every checkable claim. High claims weigh 3, medium claims 2, and low claims 1; the legacy `critical` importance value also weighs 3. A claim counts in the numerator whenever its verification status is not `unverified`, so verified, partially verified, and contradicted claims all count. Zero checkable claims returns 0 and forces `needs_more_info`.
 
 ## Row Level Security assumptions
 
@@ -108,6 +108,7 @@ Migration order:
 9. `009_rls_policies.sql`
 10. `010_fix_scoped_link_trigger.sql`
 11. `011_backend_atomic_operations.sql`
+12. `012_evidence_coverage_and_citation_validation.sql`
 
 ## Validation and type generation
 

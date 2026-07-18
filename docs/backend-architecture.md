@@ -12,8 +12,8 @@ flowchart LR
   API --> Jobs[processing_jobs]
   Worker[Job worker] --> Jobs
   Worker --> PDF[pdfjs extraction]
-  Worker --> AI[OpenAI structured output]
-  Worker --> Search[Brave Search]
+  Worker --> AI[Groq JSON output]
+  Worker --> Search[Tavily Search]
   Worker --> DB
 ```
 

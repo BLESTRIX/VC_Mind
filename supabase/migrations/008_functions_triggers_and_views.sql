@@ -276,17 +276,25 @@ returns numeric
 language sql stable
 set search_path = public
 as $$
-  select case when count(*) = 0 then 0::numeric
-    else round(100.0 * count(*) filter (where has_evidence) / count(*), 2) end
+  select coalesce(
+    round(
+      100.0 * sum(weight) filter (where verification_status <> 'unverified')
+      / nullif(sum(weight), 0),
+      2
+    ),
+    0::numeric
+  )
   from (
-    select c.id, exists (
-      select 1 from public.evidence e
-      where e.claim_id = c.id
-        and e.relationship in ('supports', 'partially_supports', 'contradicts')
-    ) as has_evidence
+    select c.verification_status,
+      case c.importance
+        when 'high' then 3
+        when 'critical' then 3
+        when 'medium' then 2
+        else 1
+      end::numeric as weight
     from public.claims c
     where c.application_id = p_application_id
-      and c.checkable and c.importance in ('high', 'critical')
+      and c.checkable
   ) coverage_claims;
 $$;
 

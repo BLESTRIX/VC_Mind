@@ -1,7 +1,7 @@
-import pLimit from 'p-limit';
+﻿import pLimit from 'p-limit';
 import { getEnv } from '../../lib/env.js';
 import { AppError } from '../../lib/errors.js';
-import { BraveSearchProvider } from '../../search/search-client.js';
+import { TavilySearchProvider } from '../../search/search-client.js';
 import type { SearchProvider } from '../../search/search-types.js';
 import type { EvidenceSourceRow } from '../../types/database.js';
 import { getServiceClient } from '../supabase.js';
@@ -9,7 +9,7 @@ import { classifySource, independenceCluster } from './evidence-normalizer.js';
 import { EvidenceRepository } from './evidence.repository.js';
 
 export class EvidenceService {
-  constructor(private readonly search: SearchProvider = new BraveSearchProvider(), private readonly repository = new EvidenceRepository()) {}
+  constructor(private readonly search: SearchProvider = new TavilySearchProvider(), private readonly repository = new EvidenceRepository()) {}
   async collect(applicationId: string) {
     const db = getServiceClient();
     const { data: application } = await db.from('applications').select('*,companies(name,domain)').eq('id', applicationId).single();
@@ -19,7 +19,7 @@ export class EvidenceService {
     const limit = pLimit(getEnv().DILIGENCE_CONCURRENCY);
     return Promise.all((claims ?? []).map((claim) => limit(async () => {
       const query = `"${company.name}" ${claim.claim_text}`.slice(0, 500);
-      const audit = await this.repository.startQuery(applicationId, claim.id, query, 'brave');
+      const audit = await this.repository.startQuery(applicationId, claim.id, query, 'tavily');
       try {
         const response = await this.search.search({ query, maxResults: 5 });
         const sources: EvidenceSourceRow[] = [];

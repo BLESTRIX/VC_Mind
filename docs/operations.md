@@ -13,7 +13,7 @@ npm run dev
 
 The service-role, AI, search, and worker keys are server-only. Never use a `NEXT_PUBLIC_`/browser-exposed prefix, print them, or commit `.env`. The Storage bucket named by `SUPABASE_STORAGE_BUCKET` must be private.
 
-Required variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `AI_API_KEY`, `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_PROVIDER=openai`, `SEARCH_API_KEY`, `SEARCH_PROVIDER=brave`, `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_CLAIMS_PER_APPLICATION`, `DILIGENCE_CONCURRENCY`, and `INTERNAL_WORKER_TOKEN`. Timeouts, retry count, memo input size, host/port, logging, and storage bucket are configurable as shown in `.env.example`.
+Required variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_PROVIDER=groq`, `TAVILY_API_KEY`, `SEARCH_PROVIDER=tavily`, `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_CLAIMS_PER_APPLICATION`, `DILIGENCE_CONCURRENCY`, and `INTERNAL_WORKER_TOKEN`. Timeouts, retry count, memo input size, host/port, logging, and storage bucket are configurable as shown in `.env.example`.
 
 ## Workers and retries
 

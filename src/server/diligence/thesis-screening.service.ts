@@ -1,7 +1,7 @@
-import { getEnv } from '../../lib/env.js';
+﻿import { getEnv } from '../../lib/env.js';
 import { AppError } from '../../lib/errors.js';
 import { ModelRunRecorder } from '../../ai/model-run-recorder.js';
-import { OpenAIProvider } from '../../ai/client.js';
+import { GroqProvider } from '../../ai/client.js';
 import { thesisScreeningSchema } from '../../ai/schemas.js';
 import { prompts } from '../../ai/prompt-registry.js';
 import { getServiceClient } from '../supabase.js';
@@ -9,7 +9,7 @@ import { transitionApplicationStage } from '../jobs/stage-runner.js';
 type Failure = { rule: string; reason: string };
 
 export class ThesisScreeningService {
-  constructor(private readonly ai = new ModelRunRecorder(new OpenAIProvider())) {}
+  constructor(private readonly ai = new ModelRunRecorder(new GroqProvider())) {}
   async screen(applicationId: string) {
     const db = getServiceClient();
     const { data } = await db.from('applications').select('*,companies(*),thesis_configs(*)').eq('id', applicationId).single();

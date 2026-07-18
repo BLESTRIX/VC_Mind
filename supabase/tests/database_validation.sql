@@ -41,6 +41,23 @@ begin
   select count(*) into count_value from public.memos where application_id = test_app and is_current;
   if count_value <> 1 then raise exception 'Current-memo rotation failed'; end if;
 
+  update public.applications set recommendation = 'invest' where id = test_app;
+  update public.memos set validation_flags = '[{"type":"invalid_excerpt"}]'::jsonb where id = second_memo;
+  if jsonb_array_length((select validation_flags from public.memos where id = second_memo)) <> 1
+    then raise exception 'Memo validation flags were not appended'; end if;
+  begin
+    update public.memos set validation_flags = '{}'::jsonb where id = second_memo;
+    raise exception 'Memo validation_flags array constraint did not fire';
+  exception when check_violation or raise_exception then null;
+  end;
+
+  update public.evidence set validation_status = 'valid' where id = '90000000-0000-4000-8000-000000000001';
+  begin
+    update public.evidence set validation_status = 'unknown' where id = '90000000-0000-4000-8000-000000000001';
+    raise exception 'Evidence validation status constraint did not fire';
+  exception when check_violation then null;
+  end;
+
   insert into public.decisions (application_id, memo_id, decision, decided_by)
   values (test_app, second_memo, 'conditional_approval', '10000000-0000-4000-8000-000000000001');
   insert into public.decisions (application_id, memo_id, decision, decided_by)

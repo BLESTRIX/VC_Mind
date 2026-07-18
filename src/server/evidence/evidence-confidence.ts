@@ -1,2 +1,14 @@
-export function evidenceConfidence(items:Array<{sourceQuality:number;entityMatch:number;completeness:number;relationship:string;independenceCluster?:string|null|undefined;founderControlled?:boolean|undefined}>):number{
- const relevant=items.filter((i)=>i.relationship!=='context_only');if(!relevant.length)return 0;const clusters=new Map<string,number>();for(const item of relevant){const key=item.independenceCluster??`unknown-${clusters.size}`;const score=item.sourceQuality*item.entityMatch*item.completeness*(item.founderControlled?.7:1);clusters.set(key,Math.max(clusters.get(key)??0,score));}const ordered=[...clusters.values()].sort((a,b)=>b-a);const combined=ordered.reduce((confidence,score,index)=>1-(1-confidence)*(1-score*(index===0?1:.6)),0);return Math.max(0,Math.min(1,combined));}
+export type ConfidenceEvidence = { sourceQuality: number; entityMatch: number; completeness: number; freshness?: number | null | undefined; relationship: string; independenceCluster?: string | null | undefined; founderControlled?: boolean | undefined };
+
+export function evidenceConfidence(items: ConfidenceEvidence[]): number {
+  const relevant = items.filter((item) => item.relationship !== 'context_only');
+  if (!relevant.length) return 0;
+  const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+  const sourceQuality = average(relevant.map((item) => item.sourceQuality));
+  const entityMatch = average(relevant.map((item) => item.entityMatch));
+  const completeness = average(relevant.map((item) => item.completeness));
+  const freshness = average(relevant.map((item) => item.freshness ?? 0.5));
+  const independentClusters = new Set(relevant.filter((item) => !item.founderControlled && item.independenceCluster).map((item) => item.independenceCluster)).size;
+  const independentConfirmation = Math.min(1, independentClusters / 2);
+  return Math.max(0, Math.min(1, sourceQuality * 0.30 + entityMatch * 0.25 + independentConfirmation * 0.20 + completeness * 0.15 + freshness * 0.10));
+}

@@ -69,7 +69,9 @@ Thesis versions have a unique `(owner_id, name, version)` identity. Only one act
 
 ## Evidence coverage
 
-`application_evidence_coverage(application_id)` returns weighted coverage across every checkable claim. High claims weigh 3, medium claims 2, and low claims 1; the legacy `critical` importance value also weighs 3. A claim counts in the numerator whenever its verification status is not `unverified`, so verified, partially verified, and contradicted claims all count. Zero checkable claims returns 0 and forces `needs_more_info`.
+Evidence coverage is calculated in application code across every checkable claim and mirrored by `application_evidence_coverage(application_id)` for database read models. Critical, high, medium, and low claims weigh 4, 3, 2, and 1 respectively. Only `verified`, `partially_verified`, and `contradicted` count in the numerator. Zero checkable claims returns 0 with `hasCheckableClaims = false` and forces `needs_more_info`.
+
+Evidence rows retain deterministic integrity state in `validation_status` (`pending`, `valid`, or `invalid`) plus an optional validation error. Invalid rows remain available for audit but are excluded from claim recalculation, confidence, scoring, and memo support. Current memos retain structured citation findings in the array-only `validation_flags` field.
 
 ## Row Level Security assumptions
 

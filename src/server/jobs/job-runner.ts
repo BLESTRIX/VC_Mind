@@ -8,11 +8,12 @@ import { DimensionDiligenceService } from '../diligence/dimension-diligence.serv
 import { calculateDealEconomics } from '../diligence/deal-economics.service.js';
 import { ClaimVerificationService } from '../diligence/claim-verification.service.js';
 import { EvidenceService } from '../evidence/evidence.service.js';
+import { EvidenceIntegrityService } from '../evidence/evidence-integrity.service.js';
 import { CitationValidationService } from '../memos/citation-validation.service.js';
 import { InformationRequestService } from '../memos/information-request.service.js';
 import { MemoService } from '../memos/memo.service.js';
 import { SkepticService } from '../memos/skeptic.service.js';
-import { ScoringService } from '../scoring/scoring.service.js';
+import { refreshDeterministicDecisionState } from '../scoring/decision-state.service.js';
 import { getServiceClient } from '../supabase.js';
 import { JobRepository } from './job.repository.js';
 import type { JobType } from './job.types.js';
@@ -60,17 +61,17 @@ export class JobRunner {
         return result;
       }
       case 'verify_claims': {
-        const db = getServiceClient();
         const collected = await new EvidenceService().collect(job.application_id);
         const verified = [];
         for (const item of collected) verified.push(await new ClaimVerificationService().verify(job.application_id, item.claim.id, item.queryId, item.sources.map((source) => source.id)));
-        const { data: coverage } = await db.rpc('application_evidence_coverage', { p_application_id: job.application_id });
-        const evidenceCoverage = Number(coverage ?? 0);
-        await db.from('applications').update({ evidence_coverage: evidenceCoverage }).eq('id', job.application_id);
-        await db.rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'evidence_ready', p_status: 'completed', p_error_message: null, p_metadata: { verified: verified.length, evidenceCoverage } });
-        return { verified, evidenceCoverage };
+        return { verified };
       }
-      case 'calculate_scores': return new ScoringService().calculate(job.application_id);
+      case 'validate_evidence': {
+        const result = await new EvidenceIntegrityService().validateApplication(job.application_id);
+        await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'evidence_ready', p_status: 'completed', p_error_message: null, p_metadata: { changedClaims: result.changedClaimIds.length, evidenceCoverage: result.coverage.coveragePercentage } });
+        return result;
+      }
+      case 'calculate_scores': return refreshDeterministicDecisionState(job.application_id);
       case 'generate_memo':
         await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'memo_draft', p_status: 'completed', p_error_message: null, p_metadata: { jobId: job.id } });
         return new MemoService().generate(job.application_id);
@@ -101,7 +102,7 @@ export class JobRunner {
   }
 
   private async schedule(applicationId: string, completed: JobType): Promise<void> {
-    const next: Partial<Record<JobType, JobType>> = { extract_document: 'extract_claims', extract_claims: 'screen_thesis', verify_claims: 'calculate_scores', calculate_scores: 'generate_memo', generate_memo: 'run_skeptic_review', run_skeptic_review: 'revise_memo', revise_memo: 'validate_citations', validate_citations: 'generate_information_requests', generate_information_requests: 'finalize_diligence' };
+    const next: Partial<Record<JobType, JobType>> = { extract_document: 'extract_claims', extract_claims: 'screen_thesis', verify_claims: 'validate_evidence', validate_evidence: 'calculate_scores', calculate_scores: 'generate_memo', generate_memo: 'run_skeptic_review', run_skeptic_review: 'revise_memo', revise_memo: 'validate_citations', validate_citations: 'generate_information_requests', generate_information_requests: 'finalize_diligence' };
     if (completed === 'screen_thesis') {
       const db = getServiceClient();
       const [{ data: score }, { count: checkableClaimCount }] = await Promise.all([

@@ -4,17 +4,15 @@ import { hasCriticalContradiction, overallScore, rubricTotal } from '../../serve
 import { recommend } from '../../server/scoring/recommendation.service.js';
 
 const scores = { founder: 8, market: 8, traction: 8, product: 8, thesis_fit: 8, deal_economics: 8, risk_resilience: 8 };
-const context = { scores, overall: 8, evidenceCoverage: 100, checkableClaimCount: 1, hardThesisFailure: false, criticalContradiction: false, unresolvedBlockingRisk: false, unacceptableDealEconomics: false, materialDataInconsistency: false, incompleteCriticalDiligence: false, missingPrivateTractionValidation: false, missingDealTerms: false };
+const context = { scores, overall: 8, evidenceCoverage: 100, hasCheckableClaims: true, hardThesisFailure: false, criticalContradiction: false, unresolvedBlockingRisk: false, unacceptableDealEconomics: false, materialDataInconsistency: false, incompleteCriticalDiligence: false, missingPrivateTractionValidation: false, missingDealTerms: false };
 
 describe('deterministic scoring', () => {
-  it('weights total exactly one', () => { expect(() => validateWeights()).not.toThrow(); expect(Object.values(SCORE_WEIGHTS).reduce((a, b) => a + b, 0)).toBe(1); });
-  it('calculates the weighted overall score', () => expect(overallScore(scores)).toBeCloseTo(8));
-  it('bounds rubric scores', () => expect(rubricTotal({ a: 3, b: -1, c: 2 })).toBe(4));
-  it('passes a hard thesis failure', () => expect(recommend({ ...context, overall: 9, hardThesisFailure: true }).recommendation).toBe('pass'));
+  it('keeps scoring weights unchanged', () => { expect(() => validateWeights()).not.toThrow(); expect(Object.values(SCORE_WEIGHTS).reduce((a, b) => a + b, 0)).toBe(1); });
+  it('calculates and bounds scores', () => { expect(overallScore(scores)).toBeCloseTo(8); expect(rubricTotal({ a: 3, b: -1, c: 2 })).toBe(4); });
+  it('forces needs more info with no checkable claims', () => expect(recommend({ ...context, hasCheckableClaims: false, hardThesisFailure: true }).recommendation).toBe('needs_more_info'));
   it('requires information when coverage is low', () => expect(recommend({ ...context, evidenceCoverage: 20 }).recommendation).toBe('needs_more_info'));
-  it('forces needs more info when there are no checkable claims', () => expect(recommend({ ...context, checkableClaimCount: 0, hardThesisFailure: true }).triggeredRules).toEqual(['NO_CHECKABLE_CLAIMS']));
-  it('defines a critical contradiction as a contradicted high-importance claim', () => {
-    expect(hasCriticalContradiction([{ importance: 'high', verification_status: 'contradicted' }])).toBe(true);
-    expect(hasCriticalContradiction([{ importance: 'critical', verification_status: 'contradicted' }])).toBe(false);
-  });
+  it('requires information when no usable evidence remains unless a hard failure applies', () => { expect(recommend({ ...context, overall: 4, evidenceCoverage: 0 }).recommendation).toBe('needs_more_info'); expect(recommend({ ...context, evidenceCoverage: 0, hardThesisFailure: true }).recommendation).toBe('pass'); });
+  it.each([['high', true], ['critical', true], ['medium', false], ['low', false]])('detects contradicted %s importance correctly', (importance, expected) => expect(hasCriticalContradiction([{ importance, verification_status: 'contradicted' }])).toBe(expected));
+  it('does not treat partially verified or unverified high claims as contradictions', () => expect(hasCriticalContradiction([{ importance: 'high', verification_status: 'partially_verified' }, { importance: 'critical', verification_status: 'unverified' }])).toBe(false));
+  it('critical contradiction forces pass and prevents invest', () => { const result = recommend({ ...context, criticalContradiction: true }); expect(result.recommendation).toBe('pass'); expect(result.explanation).toContain('high-priority or critical'); });
 });

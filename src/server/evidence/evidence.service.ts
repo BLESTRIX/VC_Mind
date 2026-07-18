@@ -15,7 +15,7 @@ export class EvidenceService {
     const { data: application } = await db.from('applications').select('*,companies(name,domain)').eq('id', applicationId).single();
     if (!application) throw new AppError('NOT_FOUND', 'Application not found', 404);
     const company = (application as unknown as { companies: { name: string; domain: string | null } }).companies;
-    const { data: claims } = await db.from('claims').select('*').eq('application_id', applicationId).eq('checkable', true).in('importance', ['high', 'critical']);
+    const { data: claims } = await db.from('claims').select('*').eq('application_id', applicationId).eq('checkable', true);
     const limit = pLimit(getEnv().DILIGENCE_CONCURRENCY);
     return Promise.all((claims ?? []).map((claim) => limit(async () => {
       const query = `"${company.name}" ${claim.claim_text}`.slice(0, 500);

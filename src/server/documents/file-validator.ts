@@ -1,0 +1,3 @@
+import { AppError } from '../../lib/errors.js';
+export type PdfFile={filename:string;mimetype:string;buffer:Buffer};
+export function validatePdf(file:PdfFile,maxBytes:number):void{if(file.mimetype!=='application/pdf')throw new AppError('VALIDATION_ERROR','Pitch deck MIME type must be application/pdf',400);if(!file.filename.toLowerCase().endsWith('.pdf'))throw new AppError('VALIDATION_ERROR','Pitch deck filename must end in .pdf',400);if(file.buffer.length===0||file.buffer.length>maxBytes)throw new AppError('VALIDATION_ERROR',`Pitch deck must be between 1 byte and ${maxBytes} bytes`,400);if(file.buffer.subarray(0,5).toString('ascii')!=='%PDF-')throw new AppError('VALIDATION_ERROR','Pitch deck does not contain a valid PDF header',400);}

@@ -107,6 +107,7 @@ Migration order:
 8. `008_functions_triggers_and_views.sql`
 9. `009_rls_policies.sql`
 10. `010_fix_scoped_link_trigger.sql`
+11. `011_backend_atomic_operations.sql`
 
 ## Validation and type generation
 
@@ -131,5 +132,5 @@ The checked-in file also exports enum unions and helper types for application su
 - Document type and processing status use checked text to remain extensible; core workflow states use enums.
 - `deal_economics` is single-current-row only and is not versioned in this MVP.
 - Source snapshot retention, Storage access policies, content canonicalization, and legal retention periods require deployment-specific controls.
-- Stage transition legality is not encoded as a state machine; `set_application_stage` provides atomic audit synchronization only.
+- Stage transition legality is enforced by the backend; `set_application_stage` provides atomic database synchronization and remains intentionally orchestration-neutral.
 - `model_runs` stores metadata, not prompts or AI implementation.

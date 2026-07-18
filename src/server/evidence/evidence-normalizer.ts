@@ -1,0 +1,3 @@
+import type { EvidenceSourceType } from '../../types/database.js';
+export function classifySource(domain:string,companyDomain?:string|null):EvidenceSourceType{if(companyDomain&&domain===companyDomain)return'company_website';if(domain==='github.com')return'github';if(domain.endsWith('.gov')||domain.endsWith('.gov.uk')||domain.endsWith('.gc.ca'))return'government';if(/crunchbase|pitchbook|tracxn/.test(domain))return'database';if(/linkedin|x\.com|twitter/.test(domain))return'social_profile';return'news';}
+export function independenceCluster(domain:string,title:string):string{return `${domain}:${title.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').slice(0,6).join('-')}`.slice(0,250);}

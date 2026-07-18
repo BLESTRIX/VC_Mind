@@ -1,0 +1,3 @@
+import type { EvidenceSourceType } from '../../types/database.js';
+export const SOURCE_QUALITY:Record<EvidenceSourceType,number>={government:.95,financial_document:.95,customer_document:.9,research:.85,database:.8,news:.7,github:.65,company_website:.5,social_profile:.45,founder_submitted:.35,search_result:.3,other:.25};
+export function sourceQuality(input:{type:EvidenceSourceType;authoritative?:boolean;founderControlled?:boolean;exactEntity?:boolean;exactMetric?:boolean;freshness?:number}):number{let value=SOURCE_QUALITY[input.type];if(input.authoritative)value+=.05;if(input.founderControlled)value-=.2;if(input.exactEntity)value+=.05;if(input.exactMetric)value+=.05;if(input.freshness!==undefined)value+=(input.freshness-.5)*.1;return Math.max(0,Math.min(1,value));}

@@ -1,0 +1,2 @@
+import { getEnv } from '../../lib/env.js';import { log } from '../../lib/logger.js';import { JobRunner } from './job-runner.js';
+getEnv();const runner=new JobRunner();const mode=process.argv.includes('--drain')?'drain':'once';let count=0;do{const job=await runner.runNext();if(!job)break;count++;}while(mode==='drain');log('info','Worker finished',{service:'job-worker',status:'completed',jobsProcessed:count});

@@ -81,12 +81,14 @@ export interface Database {
       signals: Table<SignalRow, 'signal_type' | 'title' | 'occurred_at'>;
     };
     Views: {
-      application_summary_view: { Row: ApplicationSummary };
-      claim_evidence_summary_view: { Row: ClaimWithEvidenceSummary };
-      current_application_scores_view: { Row: ScoreRow };
+      application_summary_view: { Row: ApplicationSummary; Relationships: [] };
+      claim_evidence_summary_view: { Row: ClaimWithEvidenceSummary; Relationships: [] };
+      current_application_scores_view: { Row: ScoreRow; Relationships: [] };
     };
     Functions: {
       application_evidence_coverage: { Args: { p_application_id: string }; Returns: number };
+      claim_next_processing_job: { Args: Record<never, never>; Returns: ProcessingJobRow | null };
+      create_vc_application: { Args: { p_input: Json; p_user_id: string }; Returns: string };
       set_application_stage: { Args: { p_application_id: string; p_new_stage: ApplicationStage; p_status?: JobStatus; p_error_message?: string | null; p_metadata?: Json | null }; Returns: ApplicationRow };
     };
     Enums: {

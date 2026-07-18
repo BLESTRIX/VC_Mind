@@ -1,0 +1,32 @@
+{
+  "name": "vc-brain-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "start": "tsx src/server/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run src/tests/integration",
+    "lint": "tsc --noEmit",
+    "jobs:run-next": "tsx src/server/jobs/worker.ts --once",
+    "jobs:drain": "tsx src/server/jobs/worker.ts --drain"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^9.2.1",
+    "@supabase/supabase-js": "^2.57.4",
+    "fastify": "^5.6.1",
+    "pdfjs-dist": "^5.4.149",
+    "p-limit": "^7.1.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "strong": { "company": "Northstar Relay", "thesisFit": 8.5, "verifiedProduct": true, "traction": "moderate", "expected": ["invest", "needs_more_info"] },
+  "weakThesisFit": { "company": "Harbor Health Fictional", "geography": "outside-allowlist", "expected": "pass" },
+  "contradictedTraction": { "company": "Metric Pine", "claimedCustomers": 100, "verifiedCustomers": 24, "expected": ["pass", "needs_more_info"] },
+  "insufficientEvidence": { "company": "Quiet Current", "checkableClaims": 10, "coveredClaims": 2, "expected": "needs_more_info" }
+}

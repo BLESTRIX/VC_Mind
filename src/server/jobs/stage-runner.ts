@@ -1,0 +1,9 @@
+import type { ApplicationStage, JobStatus, Json } from '../../types/database.js';
+import { AppError } from '../../lib/errors.js';
+import { getServiceClient } from '../supabase.js';
+
+const transitions: Record<ApplicationStage, ApplicationStage[]> = {
+  submitted: ['extracting', 'failed'], extracting: ['claims_ready', 'failed'], claims_ready: ['screened', 'failed'], screened: ['diligence_running', 'memo_draft', 'failed'], diligence_running: ['evidence_ready', 'failed'], evidence_ready: ['memo_draft', 'failed'], memo_draft: ['memo_ready', 'failed'], memo_ready: ['approved', 'passed', 'needs_more_info', 'failed'], approved: [], passed: [], needs_more_info: ['extracting', 'claims_ready', 'screened', 'diligence_running', 'failed'], failed: ['extracting', 'claims_ready', 'screened', 'diligence_running', 'evidence_ready', 'memo_draft']
+};
+export function assertStageTransition(current: ApplicationStage, next: ApplicationStage): void { if (current === next) return; if (!transitions[current].includes(next)) throw new AppError('INVALID_STAGE_TRANSITION', `Cannot transition from ${current} to ${next}`, 409, { current, next }); }
+export async function transitionApplicationStage(applicationId: string, next: ApplicationStage, status: JobStatus = 'completed', errorMessage: string | null = null, metadata: Json = null): Promise<void> { const db = getServiceClient(); const { data } = await db.from('applications').select('current_stage').eq('id', applicationId).single(); if (!data) throw new AppError('NOT_FOUND', 'Application not found', 404); assertStageTransition(data.current_stage, next); const { error } = await db.rpc('set_application_stage', { p_application_id: applicationId, p_new_stage: next, p_status: status, p_error_message: errorMessage, p_metadata: metadata }); if (error) throw new AppError('INTERNAL_ERROR', 'Application stage could not be synchronized', 500, { database: error.message }); }

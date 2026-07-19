@@ -1,7 +1,7 @@
 import { getEnv } from '../../lib/env.js';
 import { AppError } from '../../lib/errors.js';
 import { ModelRunRecorder } from '../../ai/model-run-recorder.js';
-import { GroqProvider } from '../../ai/client.js';
+import { createResilientAIProvider } from '../../ai/resilient-provider.js';
 import { prompts } from '../../ai/prompt-registry.js';
 import { skepticSchema } from '../../ai/schemas.js';
 import { getServiceClient } from '../supabase.js';
@@ -9,7 +9,7 @@ import { serializeContextWithinBudget } from '../../ai/context-budget.js';
 import { compactClaim, compactEvidence, compactScore } from './memo-context.js';
 
 export class SkepticService {
-  constructor(private readonly ai = new ModelRunRecorder(new GroqProvider())) {}
+  constructor(private readonly ai = new ModelRunRecorder(createResilientAIProvider())) {}
   async review(applicationId: string, memoId: string, memoOutput: unknown) {
     const db = getServiceClient();
     const [{ data: claims }, { data: scores }, { data: evidence }] = await Promise.all([

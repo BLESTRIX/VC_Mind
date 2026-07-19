@@ -1,4 +1,4 @@
-import { GroqProvider } from '../../ai/client.js';
+import { createResilientAIProvider } from '../../ai/resilient-provider.js';
 import { serializeContextWithinBudget } from '../../ai/context-budget.js';
 import { ModelRunRecorder } from '../../ai/model-run-recorder.js';
 import { prompts } from '../../ai/prompt-registry.js';
@@ -11,7 +11,7 @@ import { sourceQuality } from '../evidence/source-quality.js';
 import { getServiceClient } from '../supabase.js';
 
 export class ClaimVerificationService {
-  constructor(private readonly ai = new ModelRunRecorder(new GroqProvider())) {}
+  constructor(private readonly ai = new ModelRunRecorder(createResilientAIProvider())) {}
 
   async verify(applicationId: string, claimId: string, queryId: string, sourceIds: string[]) {
     const db = getServiceClient();

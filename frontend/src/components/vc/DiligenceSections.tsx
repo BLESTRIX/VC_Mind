@@ -8,6 +8,7 @@ import type {
   Job,
   Memo,
   Score,
+  ScoreFactor,
   Stage,
   StageEvent,
 } from "@/api/types";
@@ -327,6 +328,11 @@ function EvidenceCard({ evidence }: { evidence: Evidence }) {
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
         <span>Quality {formatNumber(evidence.source_quality)}</span>
         <span>Entity match {formatNumber(evidence.entity_match)}</span>
+        <span>Cluster {src?.independence_cluster ?? "—"}</span>
+        <span>Reason {src?.cluster_reason ? humanize(src.cluster_reason) : "—"}</span>
+        <span>Similarity {src?.cluster_similarity == null ? "—" : `${(src.cluster_similarity*100).toFixed(0)}%`}</span>
+        <span>Original publisher {src?.original_publisher ?? "—"}</span>
+        <span>Counts independently {src?.counts_as_independent ? "Yes" : "No"}</span>
       </div>
       {evidence.validation_error && (
         <p className="mt-1 text-[11px] text-destructive">{evidence.validation_error}</p>
@@ -337,7 +343,7 @@ function EvidenceCard({ evidence }: { evidence: Evidence }) {
 
 /** ---------- Scores ---------- */
 
-export function ScoresPanel({ scores }: { scores: Score[] }) {
+export function ScoresPanel({ scores, factors=[] }: { scores: Score[]; factors?:ScoreFactor[] }) {
   const current = scores.filter((s) => s.is_current);
   const overall = useMemo(() => {
     if (!current.length) return null;
@@ -360,6 +366,7 @@ export function ScoresPanel({ scores }: { scores: Score[] }) {
         ) : null
       }
     >
+      <Alert className="mb-4 border-warning/40 bg-warning/10"><AlertDescription><span className="font-semibold">Experimental MVP Recommendation</span><br/>This recommendation uses heuristic thresholds that have not yet been calibrated against historical investment outcomes.<br/><span className="text-xs">MVP v1 — uncalibrated heuristic thresholds</span></AlertDescription></Alert>
       {current.length === 0 ? (
         <EmptyState title="No scores yet" description="Scores appear once the pipeline completes scoring." />
       ) : (
@@ -382,6 +389,7 @@ export function ScoresPanel({ scores }: { scores: Score[] }) {
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{s.explanation}</p>
               )}
               <div className="mt-1 text-[10px] text-muted-foreground">Version {s.scoring_version}</div>
+              {factors.filter(f=>f.is_current&&f.dimension===s.dimension).length>0&&<div className="mt-3 overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Factor</TableHead><TableHead>Assessment</TableHead><TableHead>Points</TableHead><TableHead>Explanation</TableHead><TableHead>Supporting claims / evidence</TableHead><TableHead>Missing</TableHead><TableHead>Rubric</TableHead></TableRow></TableHeader><TableBody>{factors.filter(f=>f.is_current&&f.dimension===s.dimension).map(f=><TableRow key={f.id}><TableCell className="font-medium">{f.factor_label}</TableCell><TableCell><StatusBadge value={f.assessment_level}/></TableCell><TableCell>{formatNumber(f.score)} / {formatNumber(f.maximum_score)}</TableCell><TableCell className="max-w-xs text-xs">{f.explanation}</TableCell><TableCell className="max-w-48 text-[10px]"><div>Claims: {f.supporting_claim_ids.length?f.supporting_claim_ids.map(id=>id.slice(0,8)).join(', '):'None'}</div><div>Evidence: {f.supporting_evidence_ids.length?f.supporting_evidence_ids.map(id=>id.slice(0,8)).join(', '):'None'}</div></TableCell><TableCell>{f.missing_data?'Yes':'No'}</TableCell><TableCell>{f.rubric_version}</TableCell></TableRow>)}</TableBody></Table></div>}
             </li>
           ))}
         </ul>
@@ -401,6 +409,7 @@ export function MemoPanel({ memo }: { memo: Memo | null }) {
     );
   return (
     <div className="space-y-5">
+      <Alert className="border-warning/40 bg-warning/10"><AlertDescription><span className="font-semibold">Experimental MVP Recommendation</span><br/>This recommendation uses heuristic thresholds that have not yet been calibrated against historical investment outcomes.<br/>Recommendation policy: MVP v1 — uncalibrated</AlertDescription></Alert>
       <div className="rounded-lg border border-border/70 bg-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -599,6 +608,7 @@ export function DecisionPanel({
         title="Human decision"
         description="Record the investment-committee outcome. All choices require a reason."
       >
+        <Alert className="border-warning/40 bg-warning/10"><AlertDescription><span className="font-semibold">Experimental MVP Recommendation</span><br/>This recommendation uses heuristic thresholds that have not yet been calibrated against historical investment outcomes.</AlertDescription></Alert>
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label htmlFor="reason" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

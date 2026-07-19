@@ -1,7 +1,7 @@
 ﻿import { getEnv } from '../../lib/env.js';
 import { AppError } from '../../lib/errors.js';
 import { ModelRunRecorder } from '../../ai/model-run-recorder.js';
-import { GroqProvider } from '../../ai/client.js';
+import { createResilientAIProvider } from '../../ai/resilient-provider.js';
 import { claimExtractionSchema } from '../../ai/schemas.js';
 import { prompts } from '../../ai/prompt-registry.js';
 import { getServiceClient } from '../supabase.js';
@@ -12,7 +12,7 @@ const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').tr
 type DocumentWithPages = { id: string; document_pages?: Array<{ id: string; page_number: number; page_text: string | null }> };
 
 export class ClaimExtractionService {
-  constructor(private readonly ai = new ModelRunRecorder(new GroqProvider())) {}
+  constructor(private readonly ai = new ModelRunRecorder(createResilientAIProvider())) {}
   async extract(applicationId: string) {
     const db = getServiceClient();
     const { data: documents } = await db.from('documents').select('id,document_pages(*)').eq('application_id', applicationId).eq('document_type', 'pitch_deck').eq('processing_status', 'completed');

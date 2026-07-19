@@ -7,6 +7,7 @@ import type { EvidenceSourceRow } from '../../types/database.js';
 import { getServiceClient } from '../supabase.js';
 import { classifySource, independenceCluster } from './evidence-normalizer.js';
 import { EvidenceRepository } from './evidence.repository.js';
+import { SLAService,recordSlaFallbackAction } from '../sla/sla.service.js';
 
 export class EvidenceService {
   constructor(private readonly search: SearchProvider = new TavilySearchProvider(), private readonly repository = new EvidenceRepository()) {}
@@ -16,12 +17,15 @@ export class EvidenceService {
     if (!application) throw new AppError('NOT_FOUND', 'Application not found', 404);
     const company = (application as unknown as { companies: { name: string; domain: string | null } }).companies;
     const { data: claims } = await db.from('claims').select('*').eq('application_id', applicationId).eq('checkable', true);
+    let atRisk=false;try{const sla=await new SLAService().get(applicationId);atRisk=sla.status!=='on_track'||sla.totalRemainingSeconds<4*60*60;}catch{/* SLA telemetry must not prevent diligence. */}
+    const prioritized=[...(claims??[])].sort((a,b)=>({critical:0,high:1,medium:2,low:3}[a.importance]-{critical:0,high:1,medium:2,low:3}[b.importance])).filter(claim=>!atRisk||claim.importance!=='low');
+    if(atRisk&&(claims??[]).some(claim=>claim.importance==='low'))await recordSlaFallbackAction(applicationId,'Skipped optional low-importance public research while SLA was at risk.');
     const limit = pLimit(getEnv().DILIGENCE_CONCURRENCY);
-    return Promise.all((claims ?? []).map((claim) => limit(async () => {
+    return Promise.all(prioritized.map((claim) => limit(async () => {
       const query = `"${company.name}" ${claim.claim_text}`.slice(0, 500);
       const audit = await this.repository.startQuery(applicationId, claim.id, query, 'tavily');
       try {
-        const response = await this.search.search({ query, maxResults: 5 });
+        let response;try{response=await this.search.search({query,maxResults:5});}catch(first){if(!(first instanceof AppError)||!first.retryable)throw first;await recordSlaFallbackAction(applicationId,'Retried a transient search-provider failure once.');try{response=await this.search.search({query,maxResults:5});}catch(second){await this.repository.finishQuery(audit.id,'failed',0,second instanceof Error?second.message:'Search failed');await recordSlaFallbackAction(applicationId,'Continued with stored evidence after search-provider timeout; affected diligence remains incomplete.');return{claim,queryId:audit.id,sources:[] as EvidenceSourceRow[]};}}
         const sources: EvidenceSourceRow[] = [];
         for (const item of response.results) {
           const snapshot = (item.content ?? item.snippet ?? '').trim(); if (!snapshot) continue;

@@ -1,0 +1,14 @@
+import {describe,expect,it} from 'vitest';
+import {assignIndependenceClusters,type ClusterSource} from '../../server/evidence/source-clustering.service.js';
+import {canonicalizeEvidenceUrl,jaccardSimilarity} from '../../server/evidence/evidence-normalizer.js';
+const source=(id:string,text:string,extra:Partial<ClusterSource>={}):ClusterSource=>({id,canonical_url:`HTTPS://WWW.example.com/${id}/?utm_source=x`,snapshot_text:text,content_hash:null,publisher_name:null,founder_controlled:false,source_domain:'example.com',source_type:'news',...extra});
+const article=Array.from({length:100},(_,index)=>`word${index}`).join(' ');
+describe('deterministic source clustering',()=>{
+ it('canonicalizes tracking and presentation URL variants',()=>expect(canonicalizeEvidenceUrl('HTTPS://WWW.Example.com/story/amp/?utm_source=x#top')).toBe('https://example.com/story'));
+ it('clusters exact normalized content',()=>{const result=assignIndependenceClusters([source('a',article),source('b',article)]);expect(result[0]?.clusterId).toBe(result[1]?.clusterId);expect(result[0]?.reason).toBe('exact_content_match');});
+ it('clusters near duplicates above 0.90',()=>{const changed=`${article} additional context`;expect(jaccardSimilarity(article,changed)).toBeGreaterThanOrEqual(.9);const result=assignIndependenceClusters([source('a',article),source('b',changed)]);expect(result[0]?.clusterId).toBe(result[1]?.clusterId);expect(result.some(item=>item.reason==='near_duplicate_content')).toBe(true);});
+ it('clusters sources attributed to the same press release',()=>{const left=source('a','According to Business Wire, '+article);const right=source('b','Via Business Wire, a separate summary with different wording and analysis. '.repeat(5));const result=assignIndependenceClusters([left,right]);expect(result[0]?.clusterId).toBe(result[1]?.clusterId);});
+ it('puts founder-controlled sources in one non-independent control cluster',()=>{const result=assignIndependenceClusters([source('a','Founder profile',{founder_controlled:true,source_type:'social_profile'}),source('b','Company announcement',{founder_controlled:true,source_type:'company_website'})]);expect(result[0]?.clusterId).toBe(result[1]?.clusterId);expect(result.every(item=>!item.countsAsIndependent&&item.reason==='founder_controlled')).toBe(true);});
+ it('does not cluster distinct reporting merely because the domain matches',()=>{const result=assignIndependenceClusters([source('a','Original reporting about battery manufacturing.'),source('b','Unrelated reporting about clinical software.')]);expect(result[0]?.clusterId).not.toBe(result[1]?.clusterId);});
+ it('is idempotent for identical inputs',()=>{const input=[source('a',article),source('b',article)];expect(assignIndependenceClusters(input)).toEqual(assignIndependenceClusters(input));});
+});

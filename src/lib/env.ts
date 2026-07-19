@@ -25,6 +25,14 @@ export const envSchema = z.object({
   MAX_CLAIMS_PER_APPLICATION: z.coerce.number().int().min(1).max(50).default(15),
   DILIGENCE_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(4),
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
+  AI_FALLBACK_ENABLED: booleanString.default(false),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  AI_FALLBACK_PROVIDER: z.literal('google').default('google'),
+  AI_FALLBACK_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  AI_FALLBACK_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
+  AI_MAX_FALLBACK_ATTEMPTS: z.coerce.number().int().min(0).max(1).default(1),
+  AI_FALLBACK_PERSISTENCE_BUFFER_MS: z.coerce.number().int().positive().default(5_000),
+  SLA_STAGE_BUDGETS_JSON: z.string().optional(),
   SEARCH_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   MAX_JOB_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
   JOB_STALE_AFTER_MS: z.coerce.number().int().min(30_000).default(120_000),
@@ -40,6 +48,7 @@ export const envSchema = z.object({
   if (!env.GROQ_API_KEY_STRONG && !env.GROQ_API_KEY) {
     context.addIssue({ code: 'custom', path: ['GROQ_API_KEY_STRONG'], message: 'Set GROQ_API_KEY_STRONG or the legacy GROQ_API_KEY fallback' });
   }
+  if (env.AI_FALLBACK_ENABLED && !env.GEMINI_API_KEY) context.addIssue({ code: 'custom', path: ['GEMINI_API_KEY'], message: 'GEMINI_API_KEY is required when AI fallback is enabled' });
 });
 export type Env = z.infer<typeof envSchema>;
 

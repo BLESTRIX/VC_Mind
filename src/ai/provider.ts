@@ -1,4 +1,6 @@
 import type { z } from 'zod';
-export type AIResult<T> = { data: T; provider: string; model: string; latencyMs: number; inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number; rawResponseId?: string };
+export type AIAttempt={provider:string;model:string;status:'completed'|'failed';latencyMs:number;isFallback:boolean;fallbackReason?:string|undefined;errorMessage?:string|undefined;inputTokens?:number|undefined;outputTokens?:number|undefined;estimatedCostUsd?:number|undefined;validationResult?:unknown};
+export type AIResult<T> = { data: T; provider: string; model: string; latencyMs: number; inputTokens?: number|undefined; outputTokens?: number|undefined; estimatedCostUsd?: number|undefined; rawResponseId?: string|undefined;isFallback?:boolean|undefined;fallbackReason?:string|undefined;attempts?:AIAttempt[]|undefined };
 export type GenerateStructuredInput<T> = { model: string; systemPrompt: string; userPrompt: string; schema: z.ZodType<T>; schemaName: string; temperature?: number; timeoutMs?: number; maxCompletionTokens?: number; metadata?: Record<string, unknown> };
 export interface AIProvider { generateStructured<T>(input: GenerateStructuredInput<T>): Promise<AIResult<T>> }
+export class PrimaryAIProvider implements AIProvider{constructor(private readonly delegate:AIProvider){}generateStructured<T>(input:GenerateStructuredInput<T>){return this.delegate.generateStructured(input);}}

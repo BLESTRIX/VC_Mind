@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as ApplicationsNewRouteImport } from './routes/applications.new'
+import { Route as DiligenceTokenRouteImport } from './routes/diligence.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,50 @@ const ApplicationsNewRoute = ApplicationsNewRouteImport.update({
   path: '/applications/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiligenceTokenRoute = DiligenceTokenRouteImport.update({
+  id: '/diligence/$token',
+  path: '/diligence/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/applications/new': typeof ApplicationsNewRoute
+  '/diligence/$token': typeof DiligenceTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/applications/new': typeof ApplicationsNewRoute
+  '/diligence/$token': typeof DiligenceTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/applications/new': typeof ApplicationsNewRoute
+  '/diligence/$token': typeof DiligenceTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/applications/$id' | '/applications/new'
+  fullPaths:
+    '/' | '/applications/$id' | '/applications/new' | '/diligence/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/applications/$id' | '/applications/new'
-  id: '__root__' | '/' | '/applications/$id' | '/applications/new'
+  to: '/' | '/applications/$id' | '/applications/new' | '/diligence/$token'
+  id:
+    | '__root__'
+    | '/'
+    | '/applications/$id'
+    | '/applications/new'
+    | '/diligence/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ApplicationsNewRoute: typeof ApplicationsNewRoute
+  DiligenceTokenRoute: typeof DiligenceTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +98,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicationsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diligence/$token': {
+      id: '/diligence/$token'
+      path: '/diligence/$token'
+      fullPath: '/diligence/$token'
+      preLoaderRoute: typeof DiligenceTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +112,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ApplicationsNewRoute: ApplicationsNewRoute,
+  DiligenceTokenRoute: DiligenceTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

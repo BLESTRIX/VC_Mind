@@ -1,4 +1,5 @@
 import { getEnv } from '../../lib/env.js';
+import { AppError } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
 import type { Json, ProcessingJobRow } from '../../types/database.js';
 import { DocumentService } from '../documents/document.service.js';
@@ -18,6 +19,13 @@ import { getServiceClient } from '../supabase.js';
 import { JobRepository } from './job.repository.js';
 import type { JobType } from './job.types.js';
 import { isRetryable } from './retry-policy.js';
+import { PrivatePipelineService } from '../private-diligence/private-pipeline.service.js';
+import { PrivateEvidenceService } from '../private-diligence/private-evidence.service.js';
+import { SelectiveReunderwritingService } from '../private-diligence/reunderwriting.service.js';
+import { PrivateMemoRevisionService } from '../private-diligence/private-memo.service.js';
+import { ClosingReadinessService } from '../private-diligence/closing-readiness.service.js';
+import { clusterEvidenceSources } from '../evidence/source-clustering.service.js';
+import { recordSlaFallbackAction } from '../sla/sla.service.js';
 
 export class JobRunner {
   constructor(private readonly repository = new JobRepository()) {}
@@ -36,12 +44,14 @@ export class JobRunner {
         log('info', 'Job result discarded because diligence was stopped', { jobId: job.id, applicationId: job.application_id, service: 'job-runner', durationMs: Date.now() - started, status: 'cancelled' });
         return { ...job, status: 'cancelled', result: result as Json };
       }
-      await this.schedule(job.application_id, job.job_type as JobType);
+      await this.schedule(job.application_id, job.job_type as JobType, (job.payload ?? {}) as Record<string, Json>);
       log('info', 'Job completed', { jobId: job.id, applicationId: job.application_id, service: 'job-runner', durationMs: Date.now() - started, status: 'completed' });
       return { ...job, status: 'completed', result: result as Json };
     } catch (error) {
       const failureStatus = await this.repository.fail(job, error, getEnv().MAX_JOB_RETRIES, isRetryable(error));
-      if (failureStatus === 'failed') await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'failed', p_status: 'failed', p_error_message: error instanceof Error ? error.message : 'Job failed', p_metadata: { jobId: job.id } });
+      const privateJob=['process_private_document','extract_private_document','create_private_evidence','reconcile_claims','recalculate_underwriting','revise_private_memo','calculate_closing_readiness'].includes(job.job_type);
+      if(privateJob&&job.payload&&typeof (job.payload as Record<string,Json>).documentId==='string') await getServiceClient().from('documents').update({processing_status:'failed',processed_at:new Date().toISOString()}).eq('id',String((job.payload as Record<string,Json>).documentId));
+      if (failureStatus === 'failed' && !privateJob) await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'failed', p_status: 'failed', p_error_message: error instanceof Error ? error.message : 'Job failed', p_metadata: { jobId: job.id } });
       log('error', 'Job failed', { jobId: job.id, applicationId: job.application_id, errorCode: error instanceof Error ? error.name : 'unknown', status: 'failed' });
       throw error;
     }
@@ -58,8 +68,10 @@ export class JobRunner {
       case 'run_founder_diligence':
       case 'run_market_diligence':
       case 'run_traction_diligence':
-      case 'run_product_diligence':
-        return new DimensionDiligenceService().run(job.application_id, job.job_type.replace('run_', '').replace('_diligence', '') as 'founder' | 'market' | 'traction' | 'product');
+      case 'run_product_diligence': {
+        const dimension=job.job_type.replace('run_', '').replace('_diligence', '') as 'founder'|'market'|'traction'|'product';
+        try{return await new DimensionDiligenceService().run(job.application_id,dimension);}catch(error){if(!(error instanceof AppError)||error.code!=='AI_PROVIDER_ERROR')throw error;await recordSlaFallbackAction(job.application_id,`Continued with an incomplete ${dimension} dimension after provider failure.`);log('warn','Dimension diligence incomplete; pipeline will continue with missing-data factors',{applicationId:job.application_id,dimension,service:'job-runner',errorCode:error.code});return{assessments:[],incomplete:true,reason:error.message};}
+      }
       case 'calculate_deal_economics': {
         const db = getServiceClient();
         const { data: application } = await db.from('applications').select('*').eq('id', job.application_id).single();
@@ -71,7 +83,8 @@ export class JobRunner {
         const collected = await new EvidenceService().collect(job.application_id);
         const verified = [];
         for (const item of collected) verified.push(await new ClaimVerificationService().verify(job.application_id, item.claim.id, item.queryId, item.sources.map((source) => source.id)));
-        return { verified };
+        const clustering=await clusterEvidenceSources(job.application_id);
+        return { verified, clustering };
       }
       case 'validate_evidence': {
         const result = await new EvidenceIntegrityService().validateApplication(job.application_id);
@@ -104,20 +117,29 @@ export class JobRunner {
       case 'finalize_diligence':
         await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'memo_ready', p_status: 'completed', p_error_message: null, p_metadata: { jobId: job.id } });
         return { finalized: true };
+      case 'process_private_document': {
+        const documentId=String(payload.documentId); const {data}=await getServiceClient().from('documents').select('id,processing_status').eq('id',documentId).eq('application_id',job.application_id).single();
+        if(!data) throw new Error('Private document not found'); return {documentId,accepted:true};
+      }
+      case 'extract_private_document': return new PrivatePipelineService().extract(String(payload.documentId));
+      case 'create_private_evidence': return new PrivateEvidenceService().create(String(payload.documentId));
+      case 'reconcile_claims': return new PrivatePipelineService().reconcile(job.application_id, payload.documentId ? String(payload.documentId) : undefined);
+      case 'recalculate_underwriting': return new SelectiveReunderwritingService().recalculate(job.application_id, payload.documentId ? String(payload.documentId) : undefined);
+      case 'revise_private_memo': return new PrivateMemoRevisionService().revise(job.application_id);
+      case 'calculate_closing_readiness': return new ClosingReadinessService().calculate(job.application_id);
       default: throw new Error(`Unknown job type ${job.job_type}`);
     }
   }
 
-  private async schedule(applicationId: string, completed: JobType): Promise<void> {
+  private async schedule(applicationId: string, completed: JobType, payload: Record<string, Json> = {}): Promise<void> {
+    const privateNext:Partial<Record<JobType,JobType>>={process_private_document:'extract_private_document',extract_private_document:'create_private_evidence',create_private_evidence:'reconcile_claims',reconcile_claims:'recalculate_underwriting',recalculate_underwriting:'revise_private_memo',revise_private_memo:'calculate_closing_readiness'};
+    const privateType=privateNext[completed];if(privateType){const documentId=typeof payload.documentId==='string'?payload.documentId:'all';await this.repository.create(applicationId,privateType,payload,`${documentId}:v1`);return;}
     const next: Partial<Record<JobType, JobType>> = { extract_document: 'extract_claims', extract_claims: 'screen_thesis', verify_claims: 'validate_evidence', validate_evidence: 'calculate_scores', calculate_scores: 'generate_memo', generate_memo: 'run_skeptic_review', run_skeptic_review: 'revise_memo', revise_memo: 'validate_citations', validate_citations: 'generate_information_requests', generate_information_requests: 'finalize_diligence' };
     if (completed === 'screen_thesis') {
       const db = getServiceClient();
-      const [{ data: score }, { count: checkableClaimCount }] = await Promise.all([
-        db.from('scores').select('score').eq('application_id', applicationId).eq('dimension', 'thesis_fit').eq('is_current', true).single(),
-        db.from('claims').select('id', { count: 'exact', head: true }).eq('application_id', applicationId).eq('checkable', true)
-      ]);
+      const { data: score } = await db.from('scores').select('score').eq('application_id', applicationId).eq('dimension', 'thesis_fit').eq('is_current', true).single();
       if (Number(score?.score) < 5) {
-        await db.from('applications').update({ recommendation: (checkableClaimCount ?? 0) === 0 ? 'needs_more_info' : 'pass', investment_score: Number(score?.score), evidence_coverage: 0 }).eq('id', applicationId);
+        await refreshDeterministicDecisionState(applicationId);
         await this.repository.create(applicationId, 'generate_memo', {}, 'fast-pass-v1');
         return;
       }

@@ -53,6 +53,7 @@ import {
   ScoresPanel,
 } from "@/components/vc/DiligenceSections";
 import { cn } from "@/lib/utils";
+import { PrivateDiligencePanel } from "@/components/vc/PrivateDiligencePanel";
 
 export const Route = createFileRoute("/applications/$id")({
   head: ({ params }) => ({
@@ -133,6 +134,9 @@ function ApplicationDetailPage() {
     queryFn: () => applicationsApi.scores(id),
     refetchInterval: interval,
   });
+  const scoreFactors=useQuery({queryKey:["score-factors",id],queryFn:()=>applicationsApi.scoreFactors(id),refetchInterval:interval});
+  const slaStatus=useQuery({queryKey:["sla",id],queryFn:()=>applicationsApi.sla(id),refetchInterval:interval});
+  const modelRuns=useQuery({queryKey:["model-runs",id],queryFn:()=>applicationsApi.modelRuns(id),enabled:import.meta.env.DEV,refetchInterval:interval});
   const memos = useQuery({
     queryKey: ["memos", id],
     queryFn: () => applicationsApi.memos(id),
@@ -359,6 +363,7 @@ function ApplicationDetailPage() {
               <AlertDescription>{app.failure_reason}</AlertDescription>
             </Alert>
           )}
+          {app.recommendation&&<Alert className="mt-4 border-warning/40 bg-warning/10"><AlertTitle>Experimental MVP Recommendation</AlertTitle><AlertDescription>This recommendation uses heuristic thresholds that have not yet been calibrated against historical investment outcomes.<br/><span className="text-xs">MVP v1 — uncalibrated heuristic thresholds</span></AlertDescription></Alert>}
 
           <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCard
@@ -402,6 +407,7 @@ function ApplicationDetailPage() {
                 { v: "scoring", l: "Scoring" },
                 { v: "memo", l: "Memo" },
                 { v: "requests", l: "Information requests" },
+                { v: "private", l: "Private diligence" },
                 { v: "decision", l: "Decision" },
               ].map((t) => (
                 <TabsTrigger
@@ -538,6 +544,8 @@ function ApplicationDetailPage() {
           </TabsContent>
 
           <TabsContent value="pipeline">
+            {slaStatus.data&&<Panel title="24-hour SLA" description="Operational deadline protection and stage budgets."><DefList items={[{label:"24-hour deadline",value:formatDate(slaStatus.data.deadline)},{label:"Overall SLA state",value:<StatusBadge value={slaStatus.data.status}/>},{label:"Time remaining",value:`${Math.floor(slaStatus.data.totalRemainingSeconds/3600)}h ${Math.floor(slaStatus.data.totalRemainingSeconds%3600/60)}m`},{label:"Current-stage budget",value:`${slaStatus.data.currentStageBudgetSeconds}s`},{label:"Stage budget consumed",value:`${slaStatus.data.currentStageBudgetUsedPercentage.toFixed(1)}%`},{label:"Blocking item",value:slaStatus.data.blockingReasons.join(" · ")||"None"},{label:"Fallback actions taken",value:slaStatus.data.fallbackActions.join(" · ")||"None"}]}/></Panel>}
+            {import.meta.env.DEV&&modelRuns.data&&<Panel title="AI execution details" description="Developer diagnostics; prompts and private source content are not exposed."><ul className="space-y-2">{modelRuns.data.map(run=><li key={run.id} className="rounded border border-border/60 p-2 text-xs"><span className="font-medium">{run.is_fallback?'Fallback':'Primary'} · {run.provider} · {run.model_name}</span><span className="ml-2 text-muted-foreground">{run.prompt_version} · {run.latency_ms??'—'} ms · {run.status}{run.fallback_reason?` · ${run.fallback_reason}`:''}</span></li>)}</ul></Panel>}
             <PipelineTimeline
               events={events.data ?? []}
               jobs={status.data?.jobs ?? []}
@@ -555,7 +563,7 @@ function ApplicationDetailPage() {
           </TabsContent>
 
           <TabsContent value="scoring">
-            {scores.error ? <ErrorState error={scores.error} /> : <ScoresPanel scores={scores.data ?? []} />}
+            {scores.error ? <ErrorState error={scores.error} /> : <ScoresPanel scores={scores.data ?? []} factors={scoreFactors.data??[]} />}
           </TabsContent>
 
           <TabsContent value="memo">
@@ -583,6 +591,9 @@ function ApplicationDetailPage() {
                 }}
               />
             )}
+          </TabsContent>
+          <TabsContent value="private">
+            <PrivateDiligencePanel applicationId={id} />
           </TabsContent>
         </Tabs>
       </div>

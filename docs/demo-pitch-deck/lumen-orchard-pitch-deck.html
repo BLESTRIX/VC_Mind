@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Lumen Orchard Labs — Demo Pitch Deck</title>
+  <style>
+    @page { size: 13.333in 7.5in; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #dfe7e2; color: #13251d; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+    .slide { position: relative; width: 13.333in; height: 7.5in; overflow: hidden; page-break-after: always; background: #f7faf8; padding: .58in .68in; }
+    .slide:last-child { page-break-after: auto; }
+    .dark { color: #f7faf8; background: radial-gradient(circle at 80% 15%, #316b50 0, #173c2d 35%, #0d241a 80%); }
+    .accent-bg { background: linear-gradient(135deg, #ecf5ee, #f8fbf8 55%, #e4efe8); }
+    h1 { margin: 0; font-size: 46px; line-height: 1.04; letter-spacing: -1.8px; }
+    h2 { margin: 0 0 12px; font-size: 30px; line-height: 1.1; letter-spacing: -1px; }
+    h3 { margin: 0 0 8px; font-size: 17px; }
+    p { margin: 0; font-size: 15px; line-height: 1.45; }
+    .eyebrow { margin-bottom: 12px; color: #43825f; font-size: 11px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; }
+    .dark .eyebrow { color: #9fe0b9; }
+    .sub { max-width: 760px; margin-top: 16px; color: #547064; font-size: 19px; line-height: 1.45; }
+    .dark .sub { color: #c5ded0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card { border: 1px solid #cddbd2; border-radius: 14px; background: rgba(255,255,255,.82); padding: 17px; box-shadow: 0 4px 18px rgba(18,52,36,.05); }
+    .dark .card { border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.07); box-shadow: none; }
+    .metric { font-size: 34px; font-weight: 800; letter-spacing: -1.2px; color: #1d6141; }
+    .dark .metric { color: #abedc4; }
+    .label { margin-top: 4px; color: #61796d; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
+    .dark .label { color: #bdd4c7; }
+    .claim { position: relative; border: 1.5px solid #43a66f; border-left-width: 6px; border-radius: 11px; background: #effaf2; padding: 13px 14px 12px; font-size: 14px; line-height: 1.4; }
+    .claim strong { color: #185638; }
+    .tag { display: inline-block; margin-bottom: 6px; border-radius: 999px; background: #1d6141; color: white; padding: 3px 8px; font-size: 9px; font-weight: 800; letter-spacing: .65px; text-transform: uppercase; }
+    .tag.high { background: #a75d10; }
+    .tag.critical { background: #9d3434; }
+    .muted { color: #688075; }
+    .small { font-size: 11px; line-height: 1.4; }
+    .list { display: grid; gap: 9px; margin-top: 14px; }
+    .item { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4; }
+    .dot { width: 9px; height: 9px; margin-top: 5px; flex: 0 0 auto; border-radius: 50%; background: #4eaa76; }
+    .bar { height: 10px; border-radius: 99px; overflow: hidden; background: #dce7df; }
+    .bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2d8054, #72bf8d); }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 26px; }
+    .step { position: relative; min-height: 118px; border: 1px solid #cddbd2; border-radius: 14px; background: white; padding: 16px; }
+    .step:not(:last-child)::after { content: "→"; position: absolute; right: -23px; top: 43px; color: #4e8c68; font-size: 23px; font-weight: 800; }
+    .num { display: grid; place-items: center; width: 28px; height: 28px; margin-bottom: 11px; border-radius: 8px; background: #dceee2; color: #1b5d3e; font-weight: 800; }
+    .chart { display: flex; align-items: flex-end; gap: 12px; height: 175px; padding: 16px 8px 0; border-bottom: 1px solid #aebfb5; }
+    .col { flex: 1; min-width: 0; border-radius: 7px 7px 0 0; background: linear-gradient(#64b985, #28734c); position: relative; }
+    .col span { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 800; }
+    .col em { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); color: #688075; font-size: 10px; font-style: normal; }
+    .footer { position: absolute; right: .68in; bottom: .28in; left: .68in; display: flex; justify-content: space-between; color: #789084; font-size: 9px; letter-spacing: .4px; }
+    .dark .footer { color: #9db9a9; }
+    .pill { display: inline-block; border: 1px solid #b9ccc0; border-radius: 999px; padding: 5px 10px; color: #446458; font-size: 11px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { padding: 8px; border-bottom: 2px solid #7ca68e; color: #416152; text-align: left; text-transform: uppercase; letter-spacing: .5px; }
+    td { padding: 9px 8px; border-bottom: 1px solid #d9e4dc; vertical-align: top; }
+    .check { color: #1c7548; font-weight: 800; }
+    .watermark { position: absolute; top: 24px; right: 28px; border: 1px solid rgba(157,52,52,.35); border-radius: 6px; color: #9d3434; padding: 5px 9px; font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+    .dark .watermark { border-color: rgba(255,255,255,.3); color: #d9eee1; }
+  </style>
+</head>
+<body>
+  <section class="slide dark">
+    <div class="watermark">Synthetic demo data</div>
+    <div style="margin-top:1.2in;max-width:850px">
+      <div class="eyebrow">Seed investment opportunity · Climate software</div>
+      <h1>Lumen Orchard Labs</h1>
+      <p class="sub">Energy intelligence for cold-storage operators—turning refrigeration data into measurable savings and operational control.</p>
+      <div style="display:flex;gap:10px;margin-top:30px"><span class="pill" style="color:#dff3e5;border-color:#749d84">Canada + US</span><span class="pill" style="color:#dff3e5;border-color:#749d84">B2B SaaS</span><span class="pill" style="color:#dff3e5;border-color:#749d84">Seed</span></div>
+    </div>
+    <div class="footer"><span>CONFIDENTIAL · TEST FIXTURE ONLY</span><span>01</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">The problem</div><h2>Cold storage wastes energy without showing operators where</h2>
+    <div class="grid3" style="margin-top:24px">
+      <div class="card"><div class="metric">Invisible</div><div class="label">Equipment drift</div><p style="margin-top:10px">Operators see the utility bill after losses occur, not the compressor behavior causing them.</p></div>
+      <div class="card"><div class="metric">Manual</div><div class="label">Operational diagnosis</div><p style="margin-top:10px">Controls, maintenance, and utility data live in separate systems and spreadsheets.</p></div>
+      <div class="card"><div class="metric">Unproven</div><div class="label">Efficiency ROI</div><p style="margin-top:10px">Projects stall when savings cannot be measured against a defensible baseline.</p></div>
+    </div>
+    <div class="claim" style="margin-top:20px"><span class="tag">Problem statement</span><br><strong>Target customer:</strong> multi-site cold-storage operators with commercial refrigeration and interval-meter data.</div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>02</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Product</div><h2>From raw facility signals to prioritized energy actions</h2>
+    <div class="flow">
+      <div class="step"><div class="num">1</div><h3>Connect</h3><p class="muted">Meters, refrigeration controls, weather, and operating schedules.</p></div>
+      <div class="step"><div class="num">2</div><h3>Baseline</h3><p class="muted">Normalize consumption by temperature, throughput, and operating hours.</p></div>
+      <div class="step"><div class="num">3</div><h3>Diagnose</h3><p class="muted">Detect control drift, cycling, set-point, and defrost anomalies.</p></div>
+      <div class="step"><div class="num">4</div><h3>Verify</h3><p class="muted">Measure post-change savings against the frozen baseline.</p></div>
+    </div>
+    <div class="claim" style="margin-top:24px"><span class="tag high">Verifiable claim · Product · High</span><br><strong>As of June 30, 2026, the production platform ingests interval-meter and refrigeration-control data and produces site-level anomaly alerts.</strong></div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>03</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Measured customer outcome</div><h2>Deployment cohort shows repeatable energy reduction</h2>
+    <div class="grid2" style="margin-top:18px;align-items:center">
+      <div class="chart">
+        <div class="col" style="height:70%"><span>11.4%</span><em>Q3 ’25</em></div><div class="col" style="height:74%"><span>11.8%</span><em>Q4 ’25</em></div><div class="col" style="height:77%"><span>12.1%</span><em>Q1 ’26</em></div><div class="col" style="height:79%"><span>12.4%</span><em>Q2 ’26</em></div>
+      </div>
+      <div class="list">
+        <div class="claim"><span class="tag high">Verifiable claim · Product · High</span><br><strong>Across 12 completed deployments measured through June 30, 2026, customers recorded an average electricity reduction of 12.1%.</strong></div>
+        <div class="claim"><span class="tag">Verifiable claim · Product · Medium</span><br><strong>The median production deployment time across the same 12 deployments was 14 calendar days.</strong></div>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:22px">Measurement basis: weather- and throughput-normalized pre/post interval data. Demo figures require independent customer reports for real verification.</p>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>04</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Traction</div><h2>Commercial adoption with a clear revenue bridge</h2>
+    <div class="grid4" style="margin-top:22px">
+      <div class="card"><div class="metric">18</div><div class="label">Paying locations</div></div>
+      <div class="card"><div class="metric">$18k</div><div class="label">June 2026 MRR</div></div>
+      <div class="card"><div class="metric">$216k</div><div class="label">Annualized run-rate</div></div>
+      <div class="card"><div class="metric">94%</div><div class="label">Gross retention</div></div>
+    </div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="claim"><span class="tag critical">Verifiable claim · Traction · Critical</span><br><strong>As of June 30, 2026, 18 customer locations were paying for the platform.</strong></div>
+      <div class="claim"><span class="tag high">Verifiable claim · Traction · High</span><br><strong>June 2026 monthly recurring revenue was USD 18,000.</strong></div>
+      <div class="claim"><span class="tag high">Verifiable claim · Financial · High</span><br><strong>Annualized recurring revenue based on June 2026 MRR was USD 216,000.</strong></div>
+      <div class="claim"><span class="tag high">Verifiable claim · Traction · High</span><br><strong>Gross customer retention for the twelve months ending June 30, 2026 was 94%.</strong></div>
+    </div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>05</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Repeatability</div><h2>A focused land-and-expand motion</h2>
+    <div class="grid3" style="margin-top:22px">
+      <div class="card"><h3>Land one facility</h3><p class="muted">Start with a 30-day baseline and one operational savings workflow.</p></div>
+      <div class="card"><h3>Prove measured ROI</h3><p class="muted">Review normalized savings with finance and facility operations.</p></div>
+      <div class="card"><h3>Expand the portfolio</h3><p class="muted">Reuse connectors and playbooks across additional customer locations.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:20px">
+      <div class="claim"><span class="tag">Verifiable claim · Traction · Medium</span><br><strong>Six of the first eight customers expanded from one location to at least one additional location by June 30, 2026.</strong></div>
+      <div class="claim"><span class="tag">Verifiable claim · Traction · Medium</span><br><strong>The median sales cycle for customers signed in the first half of 2026 was 47 days.</strong></div>
+    </div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>06</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Market</div><h2>Start narrow, then expand through the refrigeration stack</h2>
+    <div class="grid2" style="margin-top:20px">
+      <div class="card"><div class="metric">Beachhead</div><p style="margin-top:10px">Canadian and US cold-storage operators managing energy-intensive refrigeration across multiple sites.</p><div class="list"><div class="item"><span class="dot"></span><span>Cold-storage warehouses</span></div><div class="item"><span class="dot"></span><span>Food distribution centers</span></div><div class="item"><span class="dot"></span><span>Temperature-controlled logistics</span></div></div></div>
+      <div class="card"><h3>Expansion vectors</h3><div class="list"><div class="item"><span class="dot"></span><span>Automated controls optimization</span></div><div class="item"><span class="dot"></span><span>Measurement and verification reporting</span></div><div class="item"><span class="dot"></span><span>Maintenance prioritization</span></div><div class="item"><span class="dot"></span><span>Utility and incentive workflows</span></div></div></div>
+    </div>
+    <div class="claim" style="margin-top:20px"><span class="tag high">Verifiable claim · Market · High</span><br><strong>The initial target segment is multi-site cold-storage operators in Canada and the United States with interval-meter data and commercial refrigeration controls.</strong></div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>07</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Business model</div><h2>Recurring software revenue tied to managed locations</h2>
+    <div class="grid3" style="margin-top:22px">
+      <div class="card"><div class="metric">$1,000</div><div class="label">Average MRR / location</div><p style="margin-top:12px">Platform, monitoring, reporting, and standard connectors.</p></div>
+      <div class="card"><div class="metric">81%</div><div class="label">June gross margin</div><p style="margin-top:12px">Software delivery with remote onboarding and partner-supported controls work.</p></div>
+      <div class="card"><div class="metric">14 mo.</div><div class="label">Illustrative CAC payback</div><p style="margin-top:12px">Founder-led sales transitioning to channel-assisted acquisition.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="claim"><span class="tag high">Verifiable claim · Business model · High</span><br><strong>June 2026 gross margin was 81% based on recognized subscription revenue and direct service costs.</strong></div>
+      <div class="claim"><span class="tag">Verifiable claim · Business model · Medium</span><br><strong>Average June 2026 subscription revenue was USD 1,000 per paying location.</strong></div>
+    </div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>08</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Differentiation</div><h2>Operational depth, not another dashboard</h2>
+    <table style="margin-top:20px"><thead><tr><th>Capability</th><th>Lumen Orchard</th><th>Utility dashboard</th><th>Generic analytics</th><th>Controls contractor</th></tr></thead><tbody>
+      <tr><td>Refrigeration-specific anomaly models</td><td class="check">● Strong</td><td>○</td><td>△</td><td>△</td></tr>
+      <tr><td>Weather + throughput normalization</td><td class="check">● Strong</td><td>△</td><td>●</td><td>○</td></tr>
+      <tr><td>Measured savings workflow</td><td class="check">● Strong</td><td>△</td><td>△</td><td>△</td></tr>
+      <tr><td>Portfolio-level rollout</td><td class="check">● Strong</td><td>●</td><td>●</td><td>○</td></tr>
+    </tbody></table>
+    <div class="claim" style="margin-top:22px"><span class="tag">Verifiable claim · Product · Medium</span><br><strong>As of June 30, 2026, the platform included refrigeration-specific anomaly rules, weather normalization, and portfolio-level deployment templates.</strong></div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>09</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Team</div><h2>Product, energy systems, and software execution</h2>
+    <div class="grid2" style="margin-top:22px">
+      <div class="card"><div class="pill">CEO · Primary contact</div><h3 style="margin-top:16px;font-size:24px">Avery Rowan</h3><p class="muted">Product and energy-systems operator responsible for customer discovery, deployment design, and commercial execution.</p></div>
+      <div class="card"><div class="pill">CTO</div><h3 style="margin-top:16px;font-size:24px">Jordan Vale</h3><p class="muted">Software engineering and operations leader responsible for the data platform, integrations, and production reliability.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="claim"><span class="tag high">Verifiable claim · Founder · High</span><br><strong>Avery Rowan and Jordan Vale have worked full-time on Lumen Orchard Labs since March 14, 2024.</strong></div>
+      <div class="claim"><span class="tag">Verifiable claim · Founder · Medium</span><br><strong>The two-person founding team shipped the first production deployment in November 2024.</strong></div>
+    </div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>10</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">The round</div><h2>USD 400,000 to turn early repeatability into a scalable motion</h2>
+    <div class="grid2" style="margin-top:20px">
+      <div><div class="grid2"><div class="card"><div class="metric">$400k</div><div class="label">Target raise</div></div><div class="card"><div class="metric">$4.0m</div><div class="label">Post-money SAFE cap</div></div></div><div class="claim" style="margin-top:16px"><span class="tag critical">Verifiable claim · Deal terms · Critical</span><br><strong>The company is raising USD 400,000 using a post-money SAFE with a USD 4,000,000 valuation cap.</strong></div></div>
+      <div class="card"><h3>Use of funds</h3><div class="list"><div><div style="display:flex;justify-content:space-between"><span>Product and integrations</span><strong>45%</strong></div><div class="bar"><span style="width:45%"></span></div></div><div><div style="display:flex;justify-content:space-between"><span>Customer deployment</span><strong>30%</strong></div><div class="bar"><span style="width:30%"></span></div></div><div><div style="display:flex;justify-content:space-between"><span>Go-to-market</span><strong>20%</strong></div><div class="bar"><span style="width:20%"></span></div></div><div><div style="display:flex;justify-content:space-between"><span>Operations</span><strong>5%</strong></div><div class="bar"><span style="width:5%"></span></div></div></div></div>
+    </div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>11</span></div>
+  </section>
+
+  <section class="slide accent-bg">
+    <div class="watermark">Synthetic demo data</div><div class="eyebrow">Verification package</div><h2>Evidence required to validate highlighted claims</h2>
+    <table style="margin-top:16px"><thead><tr><th>Claim group</th><th>Primary evidence</th><th>Independent confirmation</th></tr></thead><tbody>
+      <tr><td>Paying locations, MRR, ARR, retention</td><td>Customer-level billing export dated June 30, 2026</td><td>Accountant revenue review + two customer confirmations</td></tr>
+      <tr><td>12.1% electricity reduction</td><td>Frozen baselines and interval-meter result workbook</td><td>Two customer energy reports from separate organizations</td></tr>
+      <tr><td>Deployment time and expansion</td><td>Signed deployment acceptance records</td><td>Customer implementation confirmations</td></tr>
+      <tr><td>Founder roles and start date</td><td>Employment/IP assignment agreements</td><td>Corporate registry and professional histories</td></tr>
+      <tr><td>SAFE terms and ownership</td><td>Board-approved SAFE draft and cap table</td><td>Legal counsel confirmation</td></tr>
+    </tbody></table>
+    <div class="claim" style="margin-top:18px"><span class="tag critical">Important</span><br><strong>This application currently verifies public web evidence only. Private supporting documents must be added to the product or seeded as test fixtures before these synthetic claims can become genuinely verified.</strong></div>
+    <div class="footer"><span>LUMEN ORCHARD LABS</span><span>12</span></div>
+  </section>
+
+  <section class="slide dark">
+    <div class="watermark">Synthetic demo data</div>
+    <div style="margin-top:.9in"><div class="eyebrow">Application form companion</div><h2 style="font-size:38px">Submission details</h2>
+      <div class="grid2" style="margin-top:24px"><div class="card"><h3>Company</h3><p>Lumen Orchard Labs<br>Climate software · seed · Canada<br>https://lumen-orchard.example</p></div><div class="card"><h3>Financing</h3><p>Funding ask: USD 400,000<br>Pre-money valuation: USD 3,600,000<br>Valuation cap: USD 4,000,000</p></div><div class="card"><h3>Primary founder</h3><p>Avery Rowan · CEO<br>avery@lumen-orchard.example</p></div><div class="card"><h3>Second founder</h3><p>Jordan Vale · CTO<br>jordan@lumen-orchard.example</p></div></div>
+      <p class="small" style="margin-top:24px;color:#a9c6b5">All names, metrics, customers, and evidence references in this deck are fictional and intended only for software testing. Do not use this material as a real fundraising representation.</p>
+    </div>
+    <div class="footer"><span>END · TEST FIXTURE ONLY</span><span>13</span></div>
+  </section>
+</body>
+</html>

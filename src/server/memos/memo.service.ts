@@ -1,16 +1,17 @@
 import { getEnv } from '../../lib/env.js';
 import { AppError } from '../../lib/errors.js';
 import { ModelRunRecorder } from '../../ai/model-run-recorder.js';
-import { GroqProvider } from '../../ai/client.js';
+import { createResilientAIProvider } from '../../ai/resilient-provider.js';
 import { memoSchema, type MemoOutput } from '../../ai/schemas.js';
 import { prompts } from '../../ai/prompt-registry.js';
 import { getServiceClient } from '../supabase.js';
 import { validateMemoSafety } from './memo-safety.js';
 import { serializeContextWithinBudget } from '../../ai/context-budget.js';
 import { compactApplication, compactClaim, compactDeal, compactEvidence, compactScore } from './memo-context.js';
+import { RECOMMENDATION_POLICY } from '../scoring/scoring.config.js';
 
 export class MemoService {
-  constructor(private readonly ai = new ModelRunRecorder(new GroqProvider())) {}
+  constructor(private readonly ai = new ModelRunRecorder(createResilientAIProvider())) {}
   async generate(applicationId: string, revision?: { previous: MemoOutput; skeptic: unknown; previousMemoId: string }) {
     const db = getServiceClient();
     const [{ data: application }, { data: claims }, { data: evidence }, { data: scores }, { data: deal }] = await Promise.all([
@@ -30,20 +31,10 @@ export class MemoService {
       ...(revision ? { draftMemo: revision.previous, skepticReview: revision.skeptic } : {})
     };
     const prompt = revision ? prompts.memoRevision : prompts.memoGeneration;
-    let output: MemoOutput | undefined;
-    let lastError: unknown;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        output = await this.ai.generate({ applicationId, runType: revision ? 'memo_revision' : 'memo_generation', model: getEnv().AI_MODEL_STRONG, prompt, userPrompt: serializeContextWithinBudget(structured, getEnv().MAX_MEMO_INPUT_CHARS), schema: memoSchema, schemaName: revision ? 'memo_revision' : 'investment_memo', maxCompletionTokens: 2_500 });
-        validateMemoSafety(output, structured, application.recommendation, new Set((claims ?? []).map((claim) => claim.id)));
-        break;
-      } catch (error) {
-        lastError = error;
-        if (error instanceof AppError && error.details?.kind === 'rate_limit') break;
-      }
-    }
-    if (!output) throw lastError;
-    const { data, error } = await db.from('memos').insert({ application_id: applicationId, version: revision ? 2 : 1, previous_memo_id: revision?.previousMemoId ?? null, investment_hypothesis: output.investmentHypothesis, thesis_alignment: output.thesisAlignment, strengths: output.strengths, weaknesses: [...output.weaknesses, ...output.keyRisks], opportunities: output.opportunities, threats: output.threats, verified_claims: output.verifiedClaims, unverified_claims: [...output.partiallyVerifiedClaims, ...output.unverifiedClaims], contradicted_claims: output.contradictedClaims, key_questions: output.keyQuestions, strongest_reason_to_pass: output.keyRisks[0] ?? null, recommendation: application.recommendation, recommendation_reason: output.recommendationReason, confidence: output.confidence }).select('*').single();
+    const output = await this.ai.generate({ applicationId, runType: revision ? 'memo_revision' : 'memo_generation', model: getEnv().AI_MODEL_STRONG, prompt, userPrompt: serializeContextWithinBudget(structured, getEnv().MAX_MEMO_INPUT_CHARS), schema: memoSchema, schemaName: revision ? 'memo_revision' : 'investment_memo', maxCompletionTokens: 2_500 });
+    validateMemoSafety(output, structured, application.recommendation, new Set((claims ?? []).map((claim) => claim.id)));
+    const policyLine='Recommendation policy: MVP v1 — uncalibrated';
+    const { data, error } = await db.from('memos').insert({ application_id: applicationId, version: revision ? 2 : 1, previous_memo_id: revision?.previousMemoId ?? null, investment_hypothesis: output.investmentHypothesis, thesis_alignment: output.thesisAlignment, strengths: output.strengths, weaknesses: [...output.weaknesses, ...output.keyRisks], opportunities: output.opportunities, threats: output.threats, verified_claims: output.verifiedClaims, unverified_claims: [...output.partiallyVerifiedClaims, ...output.unverifiedClaims], contradicted_claims: output.contradictedClaims, key_questions: output.keyQuestions, strongest_reason_to_pass: output.keyRisks[0] ?? null, recommendation: application.recommendation, recommendation_reason: `${policyLine}\n\n${output.recommendationReason}`, confidence: output.confidence,recommendation_policy_version:RECOMMENDATION_POLICY.version,recommendation_policy_calibrated:RECOMMENDATION_POLICY.calibrated }).select('*').single();
     if (error) throw new AppError('INTERNAL_ERROR', 'Memo could not be stored', 500, { database: error.message });
     return { record: data, output };
   }

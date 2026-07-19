@@ -28,9 +28,14 @@ export class JobRunner {
     const job = await this.repository.claim();
     if (!job) return null;
     const started = Date.now();
+    log('info', 'Job started', { jobId: job.id, applicationId: job.application_id, jobType: job.job_type, service: 'job-runner', status: 'running' });
     try {
       const result = await this.execute(job);
-      await this.repository.complete(job.id, result as Json);
+      const completed = await this.repository.complete(job.id, result as Json);
+      if (!completed) {
+        log('info', 'Job result discarded because diligence was stopped', { jobId: job.id, applicationId: job.application_id, service: 'job-runner', durationMs: Date.now() - started, status: 'cancelled' });
+        return { ...job, status: 'cancelled', result: result as Json };
+      }
       await this.schedule(job.application_id, job.job_type as JobType);
       log('info', 'Job completed', { jobId: job.id, applicationId: job.application_id, service: 'job-runner', durationMs: Date.now() - started, status: 'completed' });
       return { ...job, status: 'completed', result: result as Json };

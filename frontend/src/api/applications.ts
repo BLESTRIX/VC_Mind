@@ -27,6 +27,7 @@ export const applicationsApi = {
     return apiRequest(`/api/applications/${id}/pitch-deck`, { method: "POST", body });
   },
   run: (id: string) => apiRequest(`/api/applications/${id}/run-diligence`, { method: "POST" }),
+  cancel: (id: string) => apiRequest<{ applicationId: string; status: "cancelled"; cancelledJobs: number }>(`/api/applications/${id}/cancel-diligence`, { method: "POST" }),
   resume: (id: string) => apiRequest(`/api/applications/${id}/resume`, { method: "POST" }),
   claims: (id: string) => apiRequest<Claim[]>(`/api/applications/${id}/claims`),
   evidence: (id: string) => apiRequest<Evidence[]>(`/api/applications/${id}/evidence`),

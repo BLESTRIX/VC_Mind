@@ -8,6 +8,7 @@ import {
   Play,
   RefreshCw,
   RotateCcw,
+  Square,
   Trash2,
 } from "lucide-react";
 import { applicationsApi } from "@/api/applications";
@@ -95,6 +96,9 @@ function ApplicationDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [stopOpen, setStopOpen] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [stopError, setStopError] = useState("");
 
   const status = useQuery({
     queryKey: ["status", id],
@@ -159,6 +163,19 @@ function ApplicationDetailPage() {
     await applicationsApi.resume(id);
     await refresh();
   };
+  const stop = async () => {
+    setStopping(true);
+    setStopError("");
+    try {
+      await applicationsApi.cancel(id);
+      await refresh();
+      setStopOpen(false);
+    } catch (error) {
+      setStopError(error instanceof Error ? error.message : "Diligence could not be stopped.");
+    } finally {
+      setStopping(false);
+    }
+  };
   const remove = async () => {
     setDeleting(true);
     setDeleteError("");
@@ -199,6 +216,39 @@ function ApplicationDetailPage() {
       ]}
       pageActions={
         <>
+          {active && (
+            <AlertDialog open={stopOpen} onOpenChange={(open) => { setStopOpen(open); if (!open) setStopError(""); }}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Square className="h-3.5 w-3.5 fill-current" /> Stop diligence
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Stop diligence for {app.companies.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Pending and running pipeline jobs will be cancelled. You can start diligence again later or delete the application after it stops.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                {stopError && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Could not stop diligence</AlertTitle>
+                    <AlertDescription>{stopError}</AlertDescription>
+                  </Alert>
+                )}
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={stopping}>Keep running</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={stopping}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={(event) => { event.preventDefault(); void stop(); }}
+                  >
+                    {stopping ? "Stopping…" : "Stop diligence"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(""); }}>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">

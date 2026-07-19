@@ -27,6 +27,8 @@ export const envSchema = z.object({
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   SEARCH_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   MAX_JOB_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
+  JOB_STALE_AFTER_MS: z.coerce.number().int().min(30_000).default(120_000),
+  DOCUMENT_EXTRACTION_TIMEOUT_MS: z.coerce.number().int().min(10_000).default(120_000),
   MAX_MEMO_INPUT_CHARS: z.coerce.number().int().min(5_000).default(30_000),
   INTERNAL_WORKER_TOKEN: z.string().min(24),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

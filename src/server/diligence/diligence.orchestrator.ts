@@ -69,6 +69,13 @@ export class DiligenceOrchestrator {
     return this.runFullDiligence(applicationId, auth);
   }
 
+  async cancel(applicationId: string, auth: AuthContext) {
+    requireRoles(auth, ['admin', 'investment_manager', 'analyst']);
+    await assertApplicationAccess(auth, applicationId);
+    const cancelledJobs = await this.jobs.cancelApplication(applicationId);
+    return { applicationId, status: 'cancelled' as const, cancelledJobs };
+  }
+
   async status(applicationId: string, auth: AuthContext) {
     await assertApplicationAccess(auth, applicationId);
     const [{ data: application }, { data: jobs }] = await Promise.all([

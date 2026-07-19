@@ -6,6 +6,7 @@ import { claimExtractionSchema } from '../../ai/schemas.js';
 import { prompts } from '../../ai/prompt-registry.js';
 import { getServiceClient } from '../supabase.js';
 import { transitionApplicationStage } from '../jobs/stage-runner.js';
+import { serializeContextWithinBudget } from '../../ai/context-budget.js';
 
 const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
 type DocumentWithPages = { id: string; document_pages?: Array<{ id: string; page_number: number; page_text: string | null }> };
@@ -17,7 +18,7 @@ export class ClaimExtractionService {
     const { data: documents } = await db.from('documents').select('id,document_pages(*)').eq('application_id', applicationId).eq('document_type', 'pitch_deck').eq('processing_status', 'completed');
     const pages = ((documents ?? []) as unknown as DocumentWithPages[]).flatMap((document) => (document.document_pages ?? []).map((page) => ({ documentId: document.id, pageId: page.id, pageNumber: page.page_number, text: page.page_text ?? '' })));
     if (!pages.length) throw new AppError('DOCUMENT_PROCESSING_FAILED', 'No extracted pitch-deck pages are available', 422);
-    const result = await this.ai.generate({ applicationId, runType: 'claim_extraction', model: getEnv().AI_MODEL_FAST, prompt: prompts.claimExtraction, userPrompt: JSON.stringify({ maximumClaims: getEnv().MAX_CLAIMS_PER_APPLICATION, pages: pages.map(({ documentId, pageNumber, text }) => ({ documentId, pageNumber, text })) }).slice(0, 100000), schema: claimExtractionSchema, schemaName: 'claim_extraction' });
+    const result = await this.ai.generate({ applicationId, runType: 'claim_extraction', model: getEnv().AI_MODEL_FAST, prompt: prompts.claimExtraction, userPrompt: serializeContextWithinBudget({ maximumClaims: getEnv().MAX_CLAIMS_PER_APPLICATION, pages: pages.map(({ documentId, pageNumber, text }) => ({ documentId, pageNumber, text })) }, 10_000), schema: claimExtractionSchema, schemaName: 'claim_extraction', maxCompletionTokens: 2_000 });
     const unique = new Map<string, (typeof result.claims)[number]>();
     for (const claim of result.claims.slice(0, getEnv().MAX_CLAIMS_PER_APPLICATION)) {
       const key = normalize(claim.claimText); if (unique.has(key)) continue;

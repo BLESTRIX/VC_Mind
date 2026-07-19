@@ -13,7 +13,7 @@ npm run dev
 
 The service-role, AI, search, and worker keys are server-only. Never use a `NEXT_PUBLIC_`/browser-exposed prefix, print them, or commit `.env`. The Storage bucket named by `SUPABASE_STORAGE_BUCKET` must be private.
 
-Required variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_PROVIDER=groq`, `TAVILY_API_KEY`, `SEARCH_PROVIDER=tavily`, `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_CLAIMS_PER_APPLICATION`, `DILIGENCE_CONCURRENCY`, and `INTERNAL_WORKER_TOKEN`. Timeouts, retry count, memo input size, host/port, logging, and storage bucket are configurable as shown in `.env.example`.
+Required variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_PROVIDER=groq`, `TAVILY_API_KEY`, `SEARCH_PROVIDER=tavily`, `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_CLAIMS_PER_APPLICATION`, `DILIGENCE_CONCURRENCY`, and `INTERNAL_WORKER_TOKEN`. `AI_FAST_MODEL_TPM` and `AI_STRONG_MODEL_TPM` default to 6,000 and 12,000; set them to the exact organization limits shown in Groq Console. `AI_RATE_LIMIT_WINDOW_MS` defaults to 60 seconds and `MAX_MEMO_INPUT_CHARS` defaults to 30,000. Timeouts, retry count, host/port, logging, and storage bucket remain configurable.
 
 ## Workers and retries
 
@@ -22,7 +22,7 @@ npm run jobs:run-next
 npm run jobs:drain
 ```
 
-Alternatively call `POST /api/jobs/run-next` with the internal worker token. Jobs use persisted inputs, unique idempotency keys, locked claiming, exponential retry metadata, and a configured retry cap. Validation/corrupt-data failures are permanent; timeouts, 429s, and provider 5xx responses are retryable. Inspect failed rows and use `POST /api/jobs/:id/retry` after correcting permanent causes.
+Alternatively call `POST /api/jobs/run-next` with the internal worker token. Jobs use persisted inputs, unique idempotency keys, locked claiming, exponential retry metadata, and a configured retry cap. The drain worker remains alive for scheduled retries. Groq 429 responses retain the provider's `Retry-After` delay, do not trigger an 8B-to-70B fallback, and do not mark the application failed until retries are exhausted. Validation/corrupt-data failures are permanent; timeouts, 429s, and provider 5xx responses are retryable. Inspect failed rows and use `POST /api/jobs/:id/retry` after correcting permanent causes.
 
 ## Tests and types
 

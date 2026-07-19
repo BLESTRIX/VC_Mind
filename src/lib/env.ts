@@ -12,6 +12,9 @@ export const envSchema = z.object({
   GROQ_API_KEY: z.string().min(1),
   AI_MODEL_FAST: z.string().min(1),
   AI_MODEL_STRONG: z.string().min(1),
+  AI_FAST_MODEL_TPM: z.coerce.number().int().positive().default(6000),
+  AI_STRONG_MODEL_TPM: z.coerce.number().int().positive().default(12000),
+  AI_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   AI_PROVIDER: z.literal('groq'),
   TAVILY_API_KEY: z.string().min(1),
   SEARCH_PROVIDER: z.literal('tavily'),
@@ -22,7 +25,7 @@ export const envSchema = z.object({
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   SEARCH_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   MAX_JOB_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
-  MAX_MEMO_INPUT_CHARS: z.coerce.number().int().positive().default(120_000),
+  MAX_MEMO_INPUT_CHARS: z.coerce.number().int().min(5_000).default(30_000),
   INTERNAL_WORKER_TOKEN: z.string().min(24),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   ENABLE_LIVE_PROVIDER_TESTS: booleanString.default(false)

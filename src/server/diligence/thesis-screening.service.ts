@@ -23,7 +23,7 @@ export class ThesisScreeningService {
     if (application.funding_ask_usd === null) failures.push({ rule: 'missing_funding_ask', reason: 'Funding ask is required for thesis screening.' });
     if (application.funding_ask_usd !== null && thesis.minimum_check_size_usd !== null && application.funding_ask_usd < Number(thesis.minimum_check_size_usd)) failures.push({ rule: 'minimum_check_size', reason: 'Funding ask is below the configured minimum.' });
     if (application.funding_ask_usd !== null && thesis.maximum_check_size_usd !== null && application.funding_ask_usd > Number(thesis.maximum_check_size_usd)) failures.push({ rule: 'maximum_check_size', reason: 'Funding ask exceeds the configured maximum.' });
-    const semantic = await this.ai.generate({ applicationId, runType: 'thesis_screening', model: getEnv().AI_MODEL_FAST, prompt: prompts.thesisScreening, userPrompt: JSON.stringify({ company, thesis, hardFailures: failures }), schema: thesisScreeningSchema, schemaName: 'thesis_screening' });
+    const semantic = await this.ai.generate({ applicationId, runType: 'thesis_screening', model: getEnv().AI_MODEL_FAST, prompt: prompts.thesisScreening, userPrompt: JSON.stringify({ company, thesis, hardFailures: failures }), schema: thesisScreeningSchema, schemaName: 'thesis_screening', maxCompletionTokens: 800 });
     const score = failures.length ? Math.min(semantic.thesisFitScore, 4.9) : semantic.thesisFitScore;
     await db.from('scores').insert({ application_id: applicationId, dimension: 'thesis_fit', score, weight: .1, weighted_score: score * .1, explanation: semantic.explanation, evidence_count: 0, scoring_version: 'v1' });
     await transitionApplicationStage(applicationId, 'screened', 'completed', null, { hardFailures: failures });

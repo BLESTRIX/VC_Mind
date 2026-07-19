@@ -22,6 +22,8 @@ import { isRetryable } from './retry-policy.js';
 export class JobRunner {
   constructor(private readonly repository = new JobRepository()) {}
 
+  async nextPendingDelayMs(): Promise<number | null> { return this.repository.nextPendingDelayMs(); }
+
   async runNext(): Promise<ProcessingJobRow | null> {
     const job = await this.repository.claim();
     if (!job) return null;
@@ -33,8 +35,8 @@ export class JobRunner {
       log('info', 'Job completed', { jobId: job.id, applicationId: job.application_id, service: 'job-runner', durationMs: Date.now() - started, status: 'completed' });
       return { ...job, status: 'completed', result: result as Json };
     } catch (error) {
-      await this.repository.fail(job, error, getEnv().MAX_JOB_RETRIES, isRetryable(error));
-      await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'failed', p_status: 'failed', p_error_message: error instanceof Error ? error.message : 'Job failed', p_metadata: { jobId: job.id } });
+      const failureStatus = await this.repository.fail(job, error, getEnv().MAX_JOB_RETRIES, isRetryable(error));
+      if (failureStatus === 'failed') await getServiceClient().rpc('set_application_stage', { p_application_id: job.application_id, p_new_stage: 'failed', p_status: 'failed', p_error_message: error instanceof Error ? error.message : 'Job failed', p_metadata: { jobId: job.id } });
       log('error', 'Job failed', { jobId: job.id, applicationId: job.application_id, errorCode: error instanceof Error ? error.name : 'unknown', status: 'failed' });
       throw error;
     }

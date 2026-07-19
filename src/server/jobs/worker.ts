@@ -1,2 +1,4 @@
 import { getEnv } from '../../lib/env.js';import { log } from '../../lib/logger.js';import { JobRunner } from './job-runner.js';
-getEnv();const runner=new JobRunner();const mode=process.argv.includes('--drain')?'drain':'once';let count=0;do{const job=await runner.runNext();if(!job)break;count++;}while(mode==='drain');log('info','Worker finished',{service:'job-worker',status:'completed',jobsProcessed:count});
+getEnv();const runner=new JobRunner();const mode=process.argv.includes('--drain')?'drain':'once';let count=0;
+while(true){try{const job=await runner.runNext();if(job){count++;if(mode==='once')break;continue;}}catch(error){if(mode==='once')throw error;log('warn','Worker job failed; waiting for an eligible retry',{service:'job-worker',status:'pending',errorCode:error instanceof Error?error.name:'unknown'});}if(mode==='once')break;const waitMs=await runner.nextPendingDelayMs();if(waitMs===null)break;await new Promise((resolve)=>setTimeout(resolve,Math.max(250,Math.min(waitMs+250,60_000))));}
+log('info','Worker finished',{service:'job-worker',status:'completed',jobsProcessed:count});

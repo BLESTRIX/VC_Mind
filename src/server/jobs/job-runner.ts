@@ -31,6 +31,8 @@ export class JobRunner {
   constructor(private readonly repository = new JobRepository()) {}
 
   async nextPendingDelayMs(): Promise<number | null> { return this.repository.nextPendingDelayMs(); }
+  async nextStaleRunningDelayMs(staleAfterMs: number): Promise<number | null> { return this.repository.nextStaleRunningDelayMs(staleAfterMs); }
+  async recoverStaleRunning(staleAfterMs: number): Promise<number> { return this.repository.recoverStaleRunning(staleAfterMs); }
 
   async runNext(): Promise<ProcessingJobRow | null> {
     const job = await this.repository.claim();

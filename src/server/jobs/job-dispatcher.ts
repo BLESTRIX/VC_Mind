@@ -1,4 +1,5 @@
 import { log } from '../../lib/logger.js';
+import { getEnv } from '../../lib/env.js';
 import { JobRunner } from './job-runner.js';
 
 /** Drains durable jobs after an API request starts or resumes a pipeline. */
@@ -20,6 +21,7 @@ export class JobDispatcher {
   }
 
   private async drain(): Promise<void> {
+    const staleAfterMs = getEnv().JOB_STALE_AFTER_MS;
     while (true) {
       try {
         const job = await this.runner.runNext();
@@ -30,9 +32,19 @@ export class JobDispatcher {
           errorCode: error instanceof Error ? error.name : 'unknown'
         });
       }
-      const waitMs = await this.runner.nextPendingDelayMs();
-      if (waitMs === null) return;
+      const [pendingDelayMs, staleDelayMs] = await Promise.all([
+        this.runner.nextPendingDelayMs(),
+        this.runner.nextStaleRunningDelayMs(staleAfterMs)
+      ]);
+      if (pendingDelayMs === null && staleDelayMs === null) return;
+      const waitMs = Math.min(pendingDelayMs ?? Number.POSITIVE_INFINITY, staleDelayMs ?? Number.POSITIVE_INFINITY);
       await new Promise((resolve) => setTimeout(resolve, Math.max(250, Math.min(waitMs + 250, 60_000))));
+      const recoveredJobs = await this.runner.recoverStaleRunning(staleAfterMs);
+      if (recoveredJobs > 0) {
+        log('warn', 'Recovered interrupted jobs after the dispatcher was already running', {
+          service: 'job-dispatcher', status: 'pending', recoveredJobs
+        });
+      }
     }
   }
 }

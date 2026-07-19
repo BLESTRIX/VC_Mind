@@ -9,8 +9,16 @@ export const getDebugEntry=()=>lastDebug;
 export const subscribeDebug=(listener:()=>void)=>{listeners.add(listener);return()=>listeners.delete(listener)};
 const publish=(entry:DebugEntry)=>{lastDebug=entry;listeners.forEach((listener)=>listener())};
 
+function resolveApiBaseUrl(): string {
+  const configured = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+  if (configured) return configured;
+  if (typeof window !== 'undefined') return '';
+  const deploymentHost = process.env.VERCEL_URL ?? process.env.VERCEL_BRANCH_URL ?? process.env.URL;
+  return deploymentHost ? `https://${deploymentHost.replace(/\/$/, '')}` : '';
+}
+
 export async function apiRequest<T>(path:string,options:RequestInit={}):Promise<T>{
-  const base=(import.meta.env.VITE_API_BASE_URL??'').replace(/\/$/,'');
+  const base=resolveApiBaseUrl();
   const headers=new Headers(options.headers);
   if(accessToken)headers.set('Authorization',`Bearer ${accessToken}`);
   if(options.body&&!(options.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');

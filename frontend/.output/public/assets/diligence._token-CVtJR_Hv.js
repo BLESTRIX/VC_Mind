@@ -1,2 +1,0 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/diligence._token-BYuDGanG.js","assets/button-CJW0GcWD.js","assets/primitives-ZLVhamXl.js","assets/textarea-BkQnMFGX.js"])))=>i.map(i=>d[i]);
-import{l as e}from"./button-CJW0GcWD.js";import{n as t,t as n}from"./lazyRouteComponent-C58aFwGe.js";var r=t(`/diligence/$token`)({component:n(()=>e(()=>import(`./diligence._token-BYuDGanG.js`),__vite__mapDeps([0,1,2,3])),`component`),head:()=>({meta:[{title:`Secure diligence portal — VC Mind`},{name:`robots`,content:`noindex,nofollow`}]})});export{r as t};

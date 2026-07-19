@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix frontend install && npm --prefix frontend run build",
-  "outputDirectory": "frontend/.output/public",
+  "buildCommand": "if [ -f frontend/package.json ]; then cd frontend && npm install && npm run build && rm -rf ../.output && mkdir -p ../.output && cp -R .output/public ../.output/; else npm install && npm run build; fi",
+  "outputDirectory": ".output/public",
   "functions": {
     "api/**/*.ts": {
       "runtime": "nodejs20.x"

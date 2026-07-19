@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -7,6 +8,7 @@ import {
   Play,
   RefreshCw,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { applicationsApi } from "@/api/applications";
 import type { Stage, StageEvent } from "@/api/types";
@@ -15,6 +17,17 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   CoverageBar,
   DefList,
@@ -78,6 +91,10 @@ async function timeline(id: string): Promise<StageEvent[]> {
 function ApplicationDetailPage() {
   const { id } = Route.useParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const status = useQuery({
     queryKey: ["status", id],
@@ -142,6 +159,18 @@ function ApplicationDetailPage() {
     await applicationsApi.resume(id);
     await refresh();
   };
+  const remove = async () => {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await applicationsApi.remove(id);
+      await queryClient.invalidateQueries({ queryKey: ["applications"] });
+      await navigate({ to: "/" });
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Application deletion failed.");
+      setDeleting(false);
+    }
+  };
 
   if (application.isLoading || status.isLoading)
     return (
@@ -170,6 +199,38 @@ function ApplicationDetailPage() {
       ]}
       pageActions={
         <>
+          <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(""); }}>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {app.companies.name}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently deletes the application, its pitch deck, diligence jobs, claims,
+                  evidence, scores, memos, and decisions. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {deleteError && (
+                <Alert variant="destructive">
+                  <AlertTitle>Deletion failed</AlertTitle>
+                  <AlertDescription>{deleteError}</AlertDescription>
+                </Alert>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={(event) => { event.preventDefault(); void remove(); }}
+                >
+                  {deleting ? "Deleting…" : "Delete application"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button
             variant="ghost"
             size="sm"

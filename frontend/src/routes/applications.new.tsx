@@ -54,6 +54,30 @@ const blankFounder = (): Founder => ({
 
 const optional = (v: string) => (v.trim() ? v.trim() : undefined);
 const money = (v: string) => (v ? Number(v) : undefined);
+const normalizeUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
+type FormStep = 1 | 2 | 3;
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function validateMoney(value: string, label: string): string | null {
+  if (!value.trim()) return null;
+  const amount = Number(value);
+  return Number.isSafeInteger(amount) && amount >= 0
+    ? null
+    : `${label} must be a whole, non-negative USD amount.`;
+}
 
 const STEPS = [
   { id: 1, label: "Company" },
@@ -113,26 +137,63 @@ function NewApplicationPage() {
     setFile(f);
   }
 
+  function validateStep(targetStep: FormStep): string | null {
+    if (targetStep === 1) {
+      if (company.name.trim().length < 2) return "Company name must contain at least 2 characters.";
+      const website = normalizeUrl(company.websiteUrl);
+      if (website && !isHttpUrl(website)) return "Enter a valid company website URL.";
+    }
+    if (targetStep === 2) {
+      for (const [index, founder] of founders.entries()) {
+        const prefix = `Founder ${index + 1}`;
+        if (founder.fullName.trim().length < 2) return `${prefix} name must contain at least 2 characters.`;
+        if (founder.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(founder.email.trim())) return `${prefix} email address is invalid.`;
+        for (const [label, value] of [["LinkedIn", founder.linkedinUrl], ["GitHub", founder.githubUrl]] as const) {
+          const url = normalizeUrl(value);
+          if (url && !isHttpUrl(url)) return `${prefix} ${label} URL is invalid.`;
+        }
+      }
+      if (founders.filter((founder) => founder.isPrimaryContact).length !== 1) return "Select exactly one founder as the primary contact.";
+    }
+    if (targetStep === 3) {
+      if (!thesisConfigId) return "Select a thesis configuration.";
+      const amountError = validateMoney(fundingAsk, "Funding ask") ?? validateMoney(valuationCap, "Valuation cap") ?? validateMoney(preMoney, "Pre-money valuation");
+      if (amountError) return amountError;
+      if (!file || file.type !== "application/pdf") return "Pitch deck must be a PDF.";
+    }
+    return null;
+  }
+
+  function continueToNextStep() {
+    const message = validateStep(step);
+    if (message) {
+      setError(new Error(message));
+      return;
+    }
+    setError(null);
+    setStep((current) => Math.min(3, current + 1) as FormStep);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
-    if (!file || file.type !== "application/pdf") {
-      setError(new Error("Pitch deck must be a PDF."));
-      setStep(3);
-      return;
+    for (const targetStep of [1, 2, 3] as const) {
+      const message = validateStep(targetStep);
+      if (message) {
+        setError(new Error(message));
+        setStep(targetStep);
+        return;
+      }
     }
-    if (!thesisConfigId) {
-      setError(new Error("Select a thesis configuration."));
-      setStep(3);
-      return;
-    }
+    const pitchDeck = file;
+    if (!pitchDeck) return;
     setBusy(true);
     setError(null);
     try {
       const payload: CreateApplicationPayload = {
         company: {
-          name: company.name,
-          ...(optional(company.websiteUrl) ? { websiteUrl: optional(company.websiteUrl) } : {}),
+          name: company.name.trim(),
+          ...(normalizeUrl(company.websiteUrl) ? { websiteUrl: normalizeUrl(company.websiteUrl) } : {}),
           ...(optional(company.sector) ? { sector: optional(company.sector) } : {}),
           ...(optional(company.stage) ? { stage: optional(company.stage) } : {}),
           ...(optional(company.geography) ? { geography: optional(company.geography) } : {}),
@@ -141,10 +202,10 @@ function NewApplicationPage() {
             : {}),
         },
         founders: founders.map((f) => ({
-          fullName: f.fullName,
-          ...(optional(f.email) ? { email: optional(f.email) } : {}),
-          ...(optional(f.linkedinUrl) ? { linkedinUrl: optional(f.linkedinUrl) } : {}),
-          ...(optional(f.githubUrl) ? { githubUrl: optional(f.githubUrl) } : {}),
+          fullName: f.fullName.trim(),
+          ...(optional(f.email) ? { email: optional(f.email)?.toLowerCase() } : {}),
+          ...(normalizeUrl(f.linkedinUrl) ? { linkedinUrl: normalizeUrl(f.linkedinUrl) } : {}),
+          ...(normalizeUrl(f.githubUrl) ? { githubUrl: normalizeUrl(f.githubUrl) } : {}),
           ...(optional(f.role) ? { role: optional(f.role) } : {}),
           isPrimaryContact: f.isPrimaryContact,
         })),
@@ -156,7 +217,9 @@ function NewApplicationPage() {
       setProgress("Creating application…");
       const created = await applicationsApi.create(payload);
       setProgress("Uploading pitch deck…");
-      await applicationsApi.uploadDeck(created.applicationId, file);
+      await applicationsApi.uploadDeck(created.applicationId, pitchDeck);
+      setProgress("Starting diligence…");
+      await applicationsApi.run(created.applicationId);
       navigate({ to: "/applications/$id", params: { id: created.applicationId } });
     } catch (caught) {
       setError(caught instanceof Error ? caught : new Error("Application creation failed."));
@@ -488,7 +551,7 @@ function NewApplicationPage() {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3))}
+                      onClick={continueToNextStep}
                     >
                       Continue
                     </Button>
@@ -556,6 +619,7 @@ function UsdField({
         <Input
           type="number"
           min={0}
+          step={1}
           inputMode="numeric"
           value={value}
           onChange={(e) => onChange(e.target.value)}

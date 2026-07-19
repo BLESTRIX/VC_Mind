@@ -4,6 +4,7 @@ async function auth(request:FastifyRequest){const context=await authenticate(req
 export async function registerRoutes(app:FastifyInstance):Promise<void>{
  app.get('/api/health',async()=>({status:'ok',service:'vc-brain-backend',timestamp:new Date().toISOString()}));
  app.post('/api/applications',async(request,reply)=>{const result=await new ApplicationService().create(request.body,await auth(request));return reply.code(201).send(result);});
+ app.delete('/api/applications/:id',async(request,reply)=>{const{id}=idParams.parse(request.params);await new ApplicationService().remove(id,await auth(request));return reply.code(204).send();});
  app.get('/api/applications/:id',async(request)=>{const{id}=idParams.parse(request.params);const a=await auth(request);await assertApplicationAccess(a,id);return applicationRepo.get(id);});
  app.get('/api/applications/:id/summary',async(request)=>{const{id}=idParams.parse(request.params);const a=await auth(request);await assertApplicationAccess(a,id);return applicationRepo.summary(id);});
  app.post('/api/applications/:id/pitch-deck',async(request,reply)=>{const{id}=idParams.parse(request.params);const a=await auth(request);const file=await request.file();if(!file)throw new AppError('VALIDATION_ERROR','Multipart PDF file is required',400);const buffer=await file.toBuffer();const document=await new DocumentService().uploadPitchDeck(id,{filename:file.filename,mimetype:file.mimetype,buffer},a);return reply.code(201).send(document);});

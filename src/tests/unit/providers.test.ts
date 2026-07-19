@@ -6,7 +6,7 @@ import { resetEnvForTests } from '../../lib/env.js';
 import { groqRateLimiter } from '../../ai/rate-limiter.js';
 
 beforeEach(() => {
-  Object.assign(process.env, { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service', GROQ_API_KEY: 'test-groq', AI_MODEL_FAST: 'llama-3.1-8b-instant', AI_MODEL_STRONG: 'llama-3.3-70b-versatile', AI_FAST_MODEL_TPM: '1000000', AI_STRONG_MODEL_TPM: '1000000', AI_PROVIDER: 'groq', TAVILY_API_KEY: 'test-tavily', SEARCH_PROVIDER: 'tavily', INTERNAL_WORKER_TOKEN: 'a'.repeat(24) });
+  Object.assign(process.env, { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service', GROQ_API_KEY: 'test-groq', GROQ_API_KEY_FAST: 'test-groq-fast', GROQ_API_KEY_STRONG: 'test-groq-strong', AI_MODEL_FAST: 'llama-3.1-8b-instant', AI_MODEL_STRONG: 'llama-3.3-70b-versatile', AI_FAST_MODEL_TPM: '1000000', AI_STRONG_MODEL_TPM: '1000000', AI_PROVIDER: 'groq', TAVILY_API_KEY: 'test-tavily', SEARCH_PROVIDER: 'tavily', INTERNAL_WORKER_TOKEN: 'a'.repeat(24) });
   resetEnvForTests();
   groqRateLimiter.reset();
 });
@@ -18,7 +18,15 @@ describe('Groq provider', () => {
     const result = await new GroqProvider().generateStructured({ model: 'llama-3.1-8b-instant', systemPrompt: 'Return data.', userPrompt: 'input', schema: z.object({ value: z.string() }), schemaName: 'fixture', maxCompletionTokens: 321 });
     expect(result.data).toEqual({ value: 'ok' }); expect(result.provider).toBe('groq');
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]; const body = JSON.parse(String(init.body));
-    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions'); expect(body.response_format).toEqual({ type: 'json_object' }); expect(body.model).toBe('llama-3.1-8b-instant'); expect(body.max_completion_tokens).toBe(321);
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions'); expect(new Headers(init.headers).get('Authorization')).toBe('Bearer test-groq-fast'); expect(body.response_format).toEqual({ type: 'json_object' }); expect(body.model).toBe('llama-3.1-8b-instant'); expect(body.max_completion_tokens).toBe(321);
+  });
+
+  it('routes strong-model work to the independent strong key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: '{"value":"ok"}' } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    await new GroqProvider().generateStructured({ model: 'llama-3.3-70b-versatile', systemPrompt: 'Return data.', userPrompt: 'input', schema: z.object({ value: z.string() }), schemaName: 'fixture', maxCompletionTokens: 100 });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer test-groq-strong');
   });
 
   it('preserves Groq Retry-After details on rate limits', async () => {

@@ -9,7 +9,9 @@ export const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_STORAGE_BUCKET: z.string().min(1).default('diligence-private'),
-  GROQ_API_KEY: z.string().min(1),
+  GROQ_API_KEY: z.string().min(1).optional(),
+  GROQ_API_KEY_FAST: z.string().min(1).optional(),
+  GROQ_API_KEY_STRONG: z.string().min(1).optional(),
   AI_MODEL_FAST: z.string().min(1),
   AI_MODEL_STRONG: z.string().min(1),
   AI_FAST_MODEL_TPM: z.coerce.number().int().positive().default(6000),
@@ -29,6 +31,13 @@ export const envSchema = z.object({
   INTERNAL_WORKER_TOKEN: z.string().min(24),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   ENABLE_LIVE_PROVIDER_TESTS: booleanString.default(false)
+}).superRefine((env, context) => {
+  if (!env.GROQ_API_KEY_FAST && !env.GROQ_API_KEY) {
+    context.addIssue({ code: 'custom', path: ['GROQ_API_KEY_FAST'], message: 'Set GROQ_API_KEY_FAST or the legacy GROQ_API_KEY fallback' });
+  }
+  if (!env.GROQ_API_KEY_STRONG && !env.GROQ_API_KEY) {
+    context.addIssue({ code: 'custom', path: ['GROQ_API_KEY_STRONG'], message: 'Set GROQ_API_KEY_STRONG or the legacy GROQ_API_KEY fallback' });
+  }
 });
 export type Env = z.infer<typeof envSchema>;
 

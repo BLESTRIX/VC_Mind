@@ -20,6 +20,7 @@ export const applicationsApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  remove: (id: string) => apiRequest<void>(`/api/applications/${id}`, { method: "DELETE" }),
   uploadDeck: (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);

@@ -11,14 +11,17 @@ const pricing: Record<string, { input: number; output: number }> = { 'llama-3.1-
 export class GroqProvider implements AIProvider {
   async generateStructured<T>(input: GenerateStructuredInput<T>): Promise<AIResult<T>> {
     const env = getEnv(); const started = Date.now(); const schema = z.toJSONSchema(input.schema); const maxCompletionTokens = input.maxCompletionTokens ?? 2_000;
-    const tokenLimit = input.model === env.AI_MODEL_STRONG ? env.AI_STRONG_MODEL_TPM : env.AI_FAST_MODEL_TPM;
-    await groqRateLimiter.acquire(input.model, estimateGroqTokens(input.systemPrompt, input.userPrompt, schema, maxCompletionTokens), tokenLimit, env.AI_RATE_LIMIT_WINDOW_MS);
+    const pool = input.model === env.AI_MODEL_STRONG ? 'strong' : 'fast';
+    const tokenLimit = pool === 'strong' ? env.AI_STRONG_MODEL_TPM : env.AI_FAST_MODEL_TPM;
+    const apiKey = pool === 'strong' ? env.GROQ_API_KEY_STRONG ?? env.GROQ_API_KEY : env.GROQ_API_KEY_FAST ?? env.GROQ_API_KEY;
+    if (!apiKey) throw new AppError('AI_PROVIDER_ERROR', `Groq ${pool} API key is not configured`, 500, { pool }, false);
+    await groqRateLimiter.acquire(`${pool}:${input.model}`, estimateGroqTokens(input.systemPrompt, input.userPrompt, schema, maxCompletionTokens), tokenLimit, env.AI_RATE_LIMIT_WINDOW_MS);
     const body = { model: input.model, messages: [{ role: 'system', content: `${input.systemPrompt}\n\nReturn exactly one JSON object matching this JSON Schema. Do not include markdown fences or commentary.\n${JSON.stringify(schema)}` }, { role: 'user', content: input.userPrompt }], temperature: input.temperature ?? .1, response_format: { type: 'json_object' }, max_completion_tokens: maxCompletionTokens, stream: false };
-    const response = await withTimeout((signal) => fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }), input.timeoutMs ?? env.AI_REQUEST_TIMEOUT_MS, 'AI_PROVIDER_ERROR');
+    const response = await withTimeout((signal) => fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }), input.timeoutMs ?? env.AI_REQUEST_TIMEOUT_MS, 'AI_PROVIDER_ERROR');
     const payload = await response.json() as GroqPayload;
     if (!response.ok) {
       const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
-      throw new AppError('AI_PROVIDER_ERROR', payload.error?.message ?? `Groq returned ${response.status}`, response.status >= 500 ? 503 : 502, { status: response.status, model: input.model, ...(retryAfterMs !== undefined ? { retryAfterMs } : {}), kind: response.status === 429 ? 'rate_limit' : 'provider_error' }, response.status === 429 || response.status >= 500);
+      throw new AppError('AI_PROVIDER_ERROR', payload.error?.message ?? `Groq returned ${response.status}`, response.status >= 500 ? 503 : 502, { status: response.status, model: input.model, pool, ...(retryAfterMs !== undefined ? { retryAfterMs } : {}), kind: response.status === 429 ? 'rate_limit' : 'provider_error' }, response.status === 429 || response.status >= 500);
     }
     const raw = payload.choices?.[0]?.message?.content; if (!raw) throw new AppError('AI_PROVIDER_ERROR', 'Groq returned no JSON output', 502, { model: input.model }, true);
     let parsed: unknown; try { parsed = JSON.parse(raw); } catch { throw new AppError('AI_PROVIDER_ERROR', 'Groq output was not valid JSON', 502, { model: input.model }, true); }

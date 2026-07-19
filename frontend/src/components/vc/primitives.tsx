@@ -362,11 +362,32 @@ export function EmptyState({
 
 export function ErrorState({ error }: { error: unknown }) {
   const message = error instanceof Error ? error.message : "Unable to load data.";
+  const details = error && typeof error === "object" && "details" in error
+    ? (error as { details?: unknown }).details
+    : undefined;
+  const issues = details && typeof details === "object" && "issues" in details
+    ? (details as { issues?: unknown }).issues
+    : undefined;
+  const validationIssues = Array.isArray(issues)
+    ? issues.filter((issue): issue is { path?: unknown[]; message: string } =>
+        Boolean(issue && typeof issue === "object" && "message" in issue && typeof issue.message === "string"),
+      )
+    : [];
   return (
     <Alert variant="destructive">
       <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Something went wrong</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
+      <AlertTitle>{validationIssues.length ? "Check the submitted information" : "Something went wrong"}</AlertTitle>
+      <AlertDescription>
+        <p>{message}</p>
+        {validationIssues.length > 0 && (
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {validationIssues.map((issue, index) => {
+              const path = Array.isArray(issue.path) ? issue.path.map(String).join(" → ") : "";
+              return <li key={`${path}-${index}`}>{path ? `${path}: ` : ""}{issue.message}</li>;
+            })}
+          </ul>
+        )}
+      </AlertDescription>
     </Alert>
   );
 }

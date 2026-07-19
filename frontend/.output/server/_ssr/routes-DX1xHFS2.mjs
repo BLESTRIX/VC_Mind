@@ -10,11 +10,11 @@ import { t as AppShell } from "./AppShell-B4AjyHBY.mjs";
 import { a as TableHeader, i as TableHead, n as TableBody, o as TableRow, r as TableCell, t as Table } from "./table-C5YxrO9c.mjs";
 import { t as useQuery } from "../_libs/tanstack__react-query.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DjD1j13s.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-drBL348J.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DX1xHFS2.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 async function listApplications() {
-	if (!supabase) throw new Error("Supabase authentication is not configured.");
+	if (!supabase) return [];
 	const { data, error } = await supabase.from("application_summary_view").select("*").order("submitted_at", { ascending: false });
 	if (error) throw new Error(error.message);
 	return data ?? [];

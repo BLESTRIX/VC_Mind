@@ -61,7 +61,7 @@ export const Route = createFileRoute("/")({
 });
 
 async function listApplications(): Promise<ApplicationSummary[]> {
-  if (!supabase) throw new Error("Supabase authentication is not configured.");
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("application_summary_view")
     .select("*")

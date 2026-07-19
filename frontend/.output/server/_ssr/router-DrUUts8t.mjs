@@ -8,7 +8,7 @@ import { t as Route$3 } from "./applications._id-roWeV0WT.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { n as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as Route$4 } from "./diligence._token-_K5iXHjm.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-C3as-KvX.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DrUUts8t.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-bI-nCkqp.css";
@@ -181,7 +181,7 @@ function RootComponent() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AuthProvider, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DebugPanel, {})] })
 	});
 }
-var $$splitComponentImporter$1 = () => import("./routes-drBL348J.mjs");
+var $$splitComponentImporter$1 = () => import("./routes-DX1xHFS2.mjs");
 var Route$1 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "Deal Flow — VC Mind" }, {
 		name: "description",

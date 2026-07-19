@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-OvIe4GOZ.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-Bddi5IHO.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "E:/VC Mind/VC_Mind/frontend/src/routes/__root.tsx",
@@ -9,7 +9,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/diligence/$token"
 		],
 		preloads: [
-			"/assets/index-UDMiyQPs.js",
+			"/assets/index-BN0LwNDV.js",
 			"/assets/button-CJW0GcWD.js",
 			"/assets/lazyRouteComponent-C58aFwGe.js",
 			"/assets/AuthProvider-ClSKVbaD.js",
@@ -19,14 +19,14 @@ var tsrStartManifest = () => ({ routes: {
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-UDMiyQPs.js"
+			src: "/assets/index-BN0LwNDV.js"
 		} }]
 	},
 	"/": {
 		filePath: "E:/VC Mind/VC_Mind/frontend/src/routes/index.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/routes-D4GzBco5.js",
+			"/assets/routes-DIleWUDJ.js",
 			"/assets/dist-9OWGo0s-.js",
 			"/assets/primitives-ZLVhamXl.js",
 			"/assets/select-NIjf7x1W.js",
